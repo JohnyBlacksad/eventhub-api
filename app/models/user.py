@@ -1,7 +1,5 @@
 from bson import ObjectId
-from motor.motor_asyncio import AsyncIOMotorClient
 from app.database import db_client
-from app.schemas.users import UserBaseModel
 
 class UserDAO:
     def __init__(self):
