@@ -57,9 +57,9 @@ class UserRegisterModel(UserBaseModel):
 
     Все поля обязательны. Email должен быть уникальным.
     """
-    email: EmailStr
-    first_name: str = Field(..., min_length=2, alias='firstName')
-    last_name: str = Field(..., min_length=2, alias='lastName')
+    email: EmailStr                                                 # type: ignore
+    first_name: str = Field(..., min_length=2, alias='firstName')   # type: ignore
+    last_name: str = Field(..., min_length=2, alias='lastName')     # type: ignore
     password: SecretStr = Field(..., min_length=8)
 
 
@@ -85,9 +85,9 @@ class UserResponseModel(UserBaseModel):
         created_at: Дата и время создания аккаунта.
     """
     id: PyObjectId = Field(alias='_id')
-    email: EmailStr
-    first_name: str = Field(..., alias='firstName')
-    last_name: str = Field(..., alias='lastName')
+    email: EmailStr                                                 # type: ignore
+    first_name: str = Field(..., alias='firstName')                 # type: ignore
+    last_name: str = Field(..., alias='lastName')                   # type: ignore
     created_at: datetime
 
 
