@@ -6,7 +6,7 @@
 from bson import ObjectId
 from app.database import db_client
 from pymongo import ReturnDocument
-
+from motor.motor_asyncio import AsyncIOMotorCollection
 
 class UserDAO:
     """Data Access Object для коллекции пользователей.
@@ -18,18 +18,18 @@ class UserDAO:
         collection: Объект коллекции MongoDB для пользователей.
     """
 
-    def __init__(self):
+    def __init__(self, collection: AsyncIOMotorCollection):
         """Инициализация UserDAO с коллекцией users."""
-        self.collection = db_client.get_db()['users']
+        self.collection = collection
 
     @classmethod
-    async def setup_indexes(cls):
+    async def setup_indexes(cls, collection: AsyncIOMotorCollection):
         """Создать индексы для коллекции пользователей.
 
         Создаёт уникальный индекс на поле email для предотвращения
         дублирования пользователей.
         """
-        instance = cls()
+        instance = cls(collection)
         await instance.collection.create_index('email', unique=True)
 
     async def create_user(self, user_data: dict) -> str:
