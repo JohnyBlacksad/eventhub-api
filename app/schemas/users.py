@@ -96,7 +96,7 @@ class UserUpdateModel(BaseModel):
 
     Все поля опциональны. Обновляются только указанные поля.
     """
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
     email: Optional[EmailStr] = Field(default=None)
     first_name: Optional[str] = Field(default=None, min_length=2, alias='firstName')
     last_name: Optional[str] = Field(default=None, min_length=2, alias='lastName')

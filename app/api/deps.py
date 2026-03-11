@@ -1,0 +1,33 @@
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.depency_container.users_deps import (
+    get_auth_service,
+    get_user_service
+)
+from app.services.auth import AuthService
+from app.services.user import UserService
+
+oauth2_scheme = HTTPBearer()
+
+async def get_current_user(
+        token: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
+        auth_service: AuthService = Depends(get_auth_service),
+        user_service: UserService = Depends(get_user_service),
+):
+    payload = await auth_service.decode_token(token.credentials)
+
+    user_id = payload.get('user_id')
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Invalid token payload'
+        )
+
+    user = await user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User not found'
+        )
+
+    return user
