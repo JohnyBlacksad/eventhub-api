@@ -36,3 +36,6 @@ class TokenDataModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     user_id: PyObjectId = Field(alias='userId')
     email: EmailStr
+
+class RefreshTokenModel(BaseModel):
+    refresh_token: str
