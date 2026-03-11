@@ -1,3 +1,8 @@
+"""API роуты.
+
+Модуль содержит главный роутер для всех endpoints приложения.
+"""
+
 from fastapi import APIRouter
 from app.api.routes.auth import auth_router
 
