@@ -4,7 +4,6 @@
 """
 
 from bson import ObjectId
-from app.database import db_client
 from pymongo import ReturnDocument
 from motor.motor_asyncio import AsyncIOMotorCollection
 
@@ -100,3 +99,11 @@ class UserDAO:
         query_filter = {'_id': ObjectId(user_id)}
         result = await self.collection.delete_one(query_filter)
         return result.deleted_count > 0
+
+    async def update_user_role(self, user_id: str, new_role: str):
+        result = await self.collection.find_one_and_update(
+            {'_id': ObjectId(user_id)},
+            {'$set': {'role': new_role}},
+            return_document=ReturnDocument.AFTER
+        )
+        return result

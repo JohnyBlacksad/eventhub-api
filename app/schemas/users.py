@@ -89,6 +89,7 @@ class UserResponseModel(UserBaseModel):
     first_name: str = Field(..., alias='firstName')                 # type: ignore
     last_name: str = Field(..., alias='lastName')                   # type: ignore
     created_at: datetime
+    role: Optional[UserRoleEnum] = UserRoleEnum.USER
 
 
 class UserUpdateModel(BaseModel):

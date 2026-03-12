@@ -7,6 +7,8 @@
 from fastapi import HTTPException, status
 from datetime import datetime, timezone
 from app.models.user import UserDAO
+from app.models.activation_code import ActivationCodeDAO
+from app.models.events import EventDAO
 from app.services.auth import AuthService
 from app.schemas.users import UserRegisterModel, UserResponseModel, UserUpdateModel
 
@@ -22,7 +24,12 @@ class UserService:
         auth_service: Сервис аутентификации.
     """
 
-    def __init__(self, user_dao: UserDAO, auth_service: AuthService):
+    def __init__(self,
+                 user_dao: UserDAO,
+                 auth_service: AuthService,
+                 code_dao:ActivationCodeDAO,
+                 event_dao: EventDAO
+                 ):
         """Инициализация UserService.
 
         Args:
@@ -31,6 +38,8 @@ class UserService:
         """
         self.user_dao = user_dao
         self.auth_service = auth_service
+        self.code_dao = code_dao
+        self.event_dao = event_dao
 
     async def register_user(self, user_data: UserRegisterModel) -> UserResponseModel:
         """Зарегистрировать нового пользователя.
@@ -157,4 +166,48 @@ class UserService:
         Returns:
             bool: True если удалён, False если не найден.
         """
+        user = await self.user_dao.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='User not found'
+            )
+
+        if user.get('role') != 'user':
+            if await self.event_dao.has_active_events(user_id):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Cannot delete organizer with published events'
+                )
+
         return await self.user_dao.delete_user(user_id)
+
+    async def upgrade_to_organizer(self, user_id: str, code_str: str):
+        """Повысить роль пользователя до ORGANIZER по коду активации.
+
+        Проверяет код активации, помечает его как использованный
+        и обновляет роль пользователя.
+
+        Args:
+            user_id: MongoDB ObjectId пользователя.
+            code_str: Строка кода активации.
+
+        Returns:
+            UserResponseModel: Обновлённые данные пользователя.
+
+        Raises:
+            HTTPException: 403 если код невалиден или уже использован.
+        """
+        code_data = await self.code_dao.use_code(code_str)
+
+        if not code_data:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Invalid or expired activation code'
+            )
+
+        new_role = code_data.get('role', 'ORGANIZER')
+
+        updated_user = await self.user_dao.update_user_role(user_id, new_role)
+
+        return UserResponseModel.model_validate(updated_user, from_attributes=True)

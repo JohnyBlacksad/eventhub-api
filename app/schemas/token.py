@@ -38,4 +38,9 @@ class TokenDataModel(BaseModel):
     email: EmailStr
 
 class RefreshTokenModel(BaseModel):
+    """Схема для запроса обновления токена.
+
+    Атрибуты:
+        refresh_token: JWT refresh токен для обновления пары.
+    """
     refresh_token: str

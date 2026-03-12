@@ -8,7 +8,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, status, HTTPException, APIRouter
 from app.database import db_client
 from app.depency_container.users_deps import get_user_collections
+from app.depency_container.event_deps import (
+    get_events_collection,
+    get_registrations_collection,
+    get_activation_code_collection,)
 from app.models.user import UserDAO
+from app.models.events import EventDAO
+from app.models.registration import RegistrationDAO
+from app.models.activation_code import ActivationCodeDAO
 from app.api.api import main_router
 
 
@@ -19,9 +26,19 @@ async def lifespan(app: FastAPI):
     Подключает к базе данных при старте и закрывает при остановке.
     """
     await db_client.connect()
-    collection = get_user_collections()
-    await UserDAO.setup_indexes(collection)
+
+    user_collection = get_user_collections()
+    event_collection = get_events_collection()
+    registrations_collection = get_registrations_collection()
+    activation_code_collection = get_activation_code_collection()
+
+    await EventDAO.setup_indexes(event_collection)
+    await UserDAO.setup_indexes(user_collection)
+    await RegistrationDAO.setup_indexes(registrations_collection)
+    await ActivationCodeDAO.setup_indexes(activation_code_collection)
+
     yield
+
     await db_client.close()
 
 

@@ -15,3 +15,4 @@ class UserRoleEnum(StrEnum):
     """
     USER = 'user'
     ADMIN = 'admin'
+    ORGANIZER = 'organizer'

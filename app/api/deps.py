@@ -1,3 +1,9 @@
+"""Зависимости API.
+
+Модуль содержит зависимости для аутентификации пользователей
+через JWT токены.
+"""
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.depency_container.users_deps import (
@@ -9,11 +15,29 @@ from app.services.user import UserService
 
 oauth2_scheme = HTTPBearer()
 
+
 async def get_current_user(
         token: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
         auth_service: AuthService = Depends(get_auth_service),
         user_service: UserService = Depends(get_user_service),
 ):
+    """Получить текущего пользователя из JWT токена.
+
+    Извлекает токен из заголовка Authorization, декодирует его
+    и находит пользователя в базе данных.
+
+    Args:
+        token: JWT токен из заголовка Authorization.
+        auth_service: Сервис аутентификации.
+        user_service: Сервис пользователей.
+
+    Returns:
+        UserResponseModel: Данные текущего пользователя.
+
+    Raises:
+        HTTPException: 401 если токен невалиден или истёк.
+        HTTPException: 404 если пользователь не найден.
+    """
     payload = await auth_service.decode_token(token.credentials)
 
     user_id = payload.get('user_id')
