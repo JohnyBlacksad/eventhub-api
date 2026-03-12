@@ -6,7 +6,7 @@
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.depency_container.users_deps import (
+from app.dependency_container.users_deps import (
     get_auth_service,
     get_user_service
 )

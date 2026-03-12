@@ -1,0 +1,362 @@
+"""Сервис событий.
+
+Модуль содержит EventService для бизнес-логики событий:
+создание, чтение, обновление, удаление событий и регистраций.
+"""
+
+from typing import Optional
+from datetime import datetime, timezone
+from fastapi import HTTPException, status
+from app.models.events import EventDAO
+from app.models.registration import RegistrationDAO
+from app.schemas.event import EventCreateModel, EventResponseModel, EventUpdateModel
+
+
+class EventService:
+    """Сервис для бизнес-логики событий.
+
+    Использует EventDAO для CRUD операций с событиями
+    и RegistrationDAO для управления регистрациями.
+
+    Атрибуты:
+        event_dao: Data Access Object для событий.
+        registration_dao: Data Access Object для регистраций.
+    """
+
+    def __init__(
+        self,
+        event_dao: EventDAO,
+        registration_dao: RegistrationDAO
+    ):
+        """Инициализация EventService.
+
+        Args:
+            event_dao: EventDAO для CRUD операций.
+            registration_dao: RegistrationDAO для регистраций.
+        """
+        self.event_dao = event_dao
+        self.registration_dao = registration_dao
+
+    async def create_event(
+        self,
+        event_data: EventCreateModel,
+        user_id: str
+    ) -> EventResponseModel:
+        """Создать новое событие.
+
+        Args:
+            event_data: Данные события для создания.
+            user_id: MongoDB ObjectId создателя.
+
+        Returns:
+            EventResponseModel: Данные созданного события.
+
+        Raises:
+            HTTPException: 500 если событие не создано.
+        """
+        event_dict = event_data.model_dump(by_alias=True)
+        event_dict['created_by'] = user_id
+        event_dict['created_at'] = datetime.now(timezone.utc)
+
+        new_id = await self.event_dao.create_event(event_dict)
+        raw_event = await self.event_dao.get_event(str(new_id))
+
+        if not raw_event:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Server error. Event not created, please try again later.'
+            )
+
+        return EventResponseModel.model_validate(raw_event, from_attributes=True)
+
+    async def get_event(self, event_id: str) -> EventResponseModel:
+        """Получить событие по ID.
+
+        Args:
+            event_id: MongoDB ObjectId события.
+
+        Returns:
+            EventResponseModel: Данные события.
+
+        Raises:
+            HTTPException: 404 если событие не найдено.
+        """
+        raw_event = await self.event_dao.get_event(event_id)
+
+        if not raw_event:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Event not found'
+            )
+
+        return EventResponseModel.model_validate(raw_event, from_attributes=True)
+
+    async def get_events(
+        self,
+        filter: Optional[dict] = None,
+        skip: int = 0,
+        limit: int = 10
+    ) -> list[EventResponseModel]:
+        """Получить список событий с пагинацией.
+
+        Args:
+            filter: Фильтр для поиска (опционально).
+            skip: Количество пропускаемых записей.
+            limit: Максимальное количество записей.
+
+        Returns:
+            list[EventResponseModel]: Список событий.
+        """
+        raw_event_list = await self.event_dao.get_events(
+            filter=filter, # type: ignore
+            skip=skip,
+            limit=limit
+        )
+
+        result = [
+            EventResponseModel.model_validate(event, from_attributes=True)
+            for event in raw_event_list
+        ]
+
+        return result
+
+    async def update_event(
+        self,
+        event_id: str,
+        user_id: str,
+        update_data: EventUpdateModel
+    ) -> EventResponseModel:
+        """Обновить данные события.
+
+        Args:
+            event_id: MongoDB ObjectId события.
+            user_id: MongoDB ObjectId пользователя.
+            update_data: Данные для обновления.
+
+        Returns:
+            EventResponseModel: Обновлённые данные события.
+
+        Raises:
+            HTTPException: 404 если событие не найдено.
+            HTTPException: 403 если пользователь не создатель.
+        """
+        current_event = await self.event_dao.get_event(event_id)
+
+        if not current_event:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Event not found'
+            )
+
+        if current_event['created_by'] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='You are not the creator of this event'
+            )
+
+        data = update_data.model_dump(by_alias=True, exclude_none=True)
+        updated_event = await self.event_dao.update_event(event_id, data)
+
+        return EventResponseModel.model_validate(updated_event, from_attributes=True)
+
+    async def delete_event(
+        self,
+        event_id: str,
+        user_id: str
+    ) -> bool:
+        """Удалить событие.
+
+        Args:
+            event_id: MongoDB ObjectId события.
+            user_id: MongoDB ObjectId пользователя.
+
+        Returns:
+            bool: True если событие удалено.
+
+        Raises:
+            HTTPException: 404 если событие не найдено.
+            HTTPException: 403 если пользователь не создатель.
+        """
+        current_event = await self.event_dao.get_event(event_id)
+
+        if not current_event:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Event not found'
+            )
+
+        if current_event['created_by'] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='You are not the creator of this event'
+            )
+
+        result = await self.event_dao.delete_event(event_id)
+        return result
+
+    async def delete_event_for_admin(self, event_id: str) -> bool:
+        """Удалить событие администратором.
+
+        Args:
+            event_id: MongoDB ObjectId события.
+
+        Returns:
+            bool: True если событие удалено.
+
+        Raises:
+            HTTPException: 404 если событие не найдено.
+
+        Note:
+            Проверка прав администратора выполняется в endpoint.
+        """
+        current_event = await self.event_dao.get_event(event_id)
+
+        if not current_event:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Event not found'
+            )
+
+        result = await self.event_dao.delete_event(event_id)
+        return result
+
+    async def register_for_event(
+        self,
+        event_id: str,
+        user_id: str
+    ) -> dict:
+        """Зарегистрировать пользователя на событие.
+
+        Args:
+            event_id: MongoDB ObjectId события.
+            user_id: MongoDB ObjectId пользователя.
+
+        Returns:
+            dict: Статус регистрации.
+
+        Raises:
+            HTTPException: 404 если событие не найдено.
+            HTTPException: 400 если пользователь уже зарегистрирован.
+            HTTPException: 400 если событие заполнено.
+        """
+        current_event = await self.event_dao.get_event(event_id)
+
+        if not current_event:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Event not found'
+            )
+
+        existing = await self.registration_dao.get_existing_registration(
+            event_id, user_id
+        )
+
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='You are already registered for this event'
+            )
+
+        if current_event.get('max_participants') is not None:
+            registrations = await self.registration_dao.get_event_registrations(
+                event_id=event_id,
+                skip=0,
+                limit=current_event['max_participants'] + 1
+            )
+
+            if len(registrations) >= current_event['max_participants']:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Event is full'
+                )
+
+        await self.registration_dao.add_registration(event_id, user_id)
+
+        return {'status': 'registered', 'event_id': event_id}
+
+    async def unregister_from_event(
+        self,
+        event_id: str,
+        user_id: str
+    ) -> dict:
+        """Отменить регистрацию пользователя на событие.
+
+        Args:
+            event_id: MongoDB ObjectId события.
+            user_id: MongoDB ObjectId пользователя.
+
+        Returns:
+            dict: Статус отмены регистрации.
+
+        Raises:
+            HTTPException: 404 если событие не найдено.
+            HTTPException: 404 если регистрация не найдена.
+        """
+        current_event = await self.event_dao.get_event(event_id)
+
+        if not current_event:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Event not found'
+            )
+
+        result = await self.registration_dao.remove_registration(event_id, user_id)
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Registration not found'
+            )
+
+        return {'status': 'unregistered', 'event_id': event_id}
+
+    async def get_event_participants(
+        self,
+        event_id: str,
+        skip: int = 0,
+        limit: int = 50
+    ) -> list[dict]:
+        """Получить список участников события.
+
+        Args:
+            event_id: MongoDB ObjectId события.
+            skip: Количество пропускаемых записей.
+            limit: Максимальное количество записей.
+
+        Returns:
+            list[dict]: Список регистраций участников.
+
+        Raises:
+            HTTPException: 404 если событие не найдено.
+        """
+        current_event = await self.event_dao.get_event(event_id)
+
+        if not current_event:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Event not found'
+            )
+
+        participants = await self.registration_dao.get_event_registrations(
+            event_id=event_id,
+            skip=skip,
+            limit=limit
+        )
+
+        return participants
+
+    async def get_user_registrations(
+        self,
+        user_id: str
+    ) -> list[dict]:
+        """Получить список регистраций пользователя.
+
+        Args:
+            user_id: MongoDB ObjectId пользователя.
+
+        Returns:
+            list[dict]: Список регистраций пользователя.
+        """
+        registrations = await self.registration_dao.get_user_registrations(user_id)
+
+        return registrations

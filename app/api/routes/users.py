@@ -8,7 +8,7 @@ from fastapi import HTTPException, status, Depends, APIRouter
 from app.schemas.users import UserResponseModel, UserUpdateModel
 from app.api.deps import get_current_user
 from app.services.user import UserService
-from app.depency_container.users_deps import get_user_service
+from app.dependency_container.users_deps import get_user_service
 
 user_router = APIRouter(tags=['Users'])
 

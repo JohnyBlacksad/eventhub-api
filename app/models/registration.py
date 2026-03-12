@@ -112,3 +112,13 @@ class RegistrationDAO:
         cursor = self.collection.find({'user_id': ObjectId(user_id)})
         result = await cursor.to_list(length=100)
         return result
+
+    async def get_existing_registration(self, event_id: str, user_id: str) -> dict | None:
+        payload = {
+            'event_id': ObjectId(event_id),
+            "user_id": ObjectId(user_id)
+        }
+
+        registration = await self.collection.find_one(payload)
+
+        return registration

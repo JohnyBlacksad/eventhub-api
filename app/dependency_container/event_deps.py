@@ -9,6 +9,7 @@ from app.database import db_client
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
 from app.models.activation_code import ActivationCodeDAO
+from app.services.event import EventService
 
 
 def get_events_collection():
@@ -17,10 +18,10 @@ def get_events_collection():
     Returns:
         Коллекция MongoDB для событий.
     """
-    return db_client.get_db()['events']                             # type: ignore
+    return db_client.get_db()['events']  # type: ignore
 
 
-def get_event_dao(collection=Depends(get_events_collection)):
+def get_event_dao(collection=Depends(get_events_collection)) -> EventDAO:
     """Создать EventDAO с зависимостью от коллекции.
 
     Args:
@@ -38,10 +39,10 @@ def get_registrations_collection():
     Returns:
         Коллекция MongoDB для регистраций.
     """
-    return db_client.get_db()['registrations']                     # type: ignore
+    return db_client.get_db()['registrations']  # type: ignore
 
 
-def get_registration_dao(collection=Depends(get_registrations_collection)):
+def get_registration_dao(collection=Depends(get_registrations_collection)) -> RegistrationDAO:
     """Создать RegistrationDAO с зависимостью от коллекции.
 
     Args:
@@ -59,10 +60,10 @@ def get_activation_code_collection():
     Returns:
         Коллекция MongoDB для кодов активации.
     """
-    return db_client.get_db()['org_code']                           # type: ignore
+    return db_client.get_db()['org_code']  # type: ignore
 
 
-def get_activation_code_dao(collection=Depends(get_activation_code_collection)):
+def get_activation_code_dao(collection=Depends(get_activation_code_collection)) -> ActivationCodeDAO:
     """Создать ActivationCodeDAO с зависимостью от коллекции.
 
     Args:
@@ -72,3 +73,22 @@ def get_activation_code_dao(collection=Depends(get_activation_code_collection)):
         ActivationCodeDAO: Data Access Object для кодов активации.
     """
     return ActivationCodeDAO(collection)
+
+
+def get_event_service(
+    event_dao: EventDAO = Depends(get_event_dao),
+    registration_dao: RegistrationDAO = Depends(get_registration_dao)
+) -> EventService:
+    """Создать EventService с зависимостями.
+
+    Args:
+        event_dao: EventDAO (из get_event_dao).
+        registration_dao: RegistrationDAO (из get_registration_dao).
+
+    Returns:
+        EventService: Сервис для бизнес-логики событий.
+    """
+    return EventService(
+        event_dao=event_dao,
+        registration_dao=registration_dao
+    )

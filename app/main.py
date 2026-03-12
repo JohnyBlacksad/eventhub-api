@@ -5,13 +5,14 @@
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, status, HTTPException, APIRouter
+from fastapi import FastAPI, status, HTTPException
 from app.database import db_client
-from app.depency_container.users_deps import get_user_collections
-from app.depency_container.event_deps import (
+from app.dependency_container.users_deps import get_user_collections
+from app.dependency_container.event_deps import (
     get_events_collection,
     get_registrations_collection,
-    get_activation_code_collection,)
+    get_activation_code_collection,
+)
 from app.models.user import UserDAO
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
@@ -63,11 +64,14 @@ async def health_check():
         return {
             'status': 'ok',
             'components': {
-                'database': "connected",
+                'database': 'connected',
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                            detail=f'Database is down: {e}')
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f'Database is down: {e}'
+        )
+
 
 app.include_router(main_router, prefix='/api/v1')

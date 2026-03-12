@@ -6,7 +6,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.schemas.users import UserRegisterModel, UserLoginModel
 from app.schemas.token import TokenModel, RefreshTokenModel
-from app.depency_container.users_deps import get_auth_service, get_user_service
+from app.dependency_container.users_deps import get_auth_service, get_user_service
 from app.services.auth import AuthService
 from app.services.user import UserService
 

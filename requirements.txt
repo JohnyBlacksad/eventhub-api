@@ -5,4 +5,4 @@ uvicorn==0.41.0
 fastapi==0.135.1
 PyJWT==2.11.0
 passlib==1.7.4
-email-validator==2.1.0пше
+email-validator==2.1.0
