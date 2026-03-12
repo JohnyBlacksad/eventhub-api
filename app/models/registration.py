@@ -5,10 +5,9 @@
 """
 
 from bson import ObjectId
-from pymongo import ReturnDocument
 from motor.motor_asyncio import AsyncIOMotorCollection
 from datetime import datetime, timezone
-from pymongo import ReturnDocument, ASCENDING, TEXT
+from pymongo import ASCENDING
 
 
 class RegistrationDAO:
@@ -101,7 +100,7 @@ class RegistrationDAO:
         result = await cursor.to_list(length=limit)
         return result
 
-    async def get_user_registartions(self, user_id: str) -> list[dict]:
+    async def get_user_registrations(self, user_id: str) -> list[dict]:
         """Получить список регистраций пользователя.
 
         Args:

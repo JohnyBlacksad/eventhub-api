@@ -135,7 +135,7 @@ class EventDAO:
         """
         query = {
             'created_by': ObjectId(user_id),
-            'status': {'$in': ['published', 'cancelled', 'finished']}
+            'status': {'$in': ['published']}
         }
         result = await self.collections.find_one(query)
         return result is not None

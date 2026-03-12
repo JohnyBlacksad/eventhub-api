@@ -35,8 +35,8 @@ class EventBaseModel(BaseModel):
 
     Атрибуты:
         title: Название события (3-50 символов).
-        descriptions: Описание события (15-300 символов).
-        locations: Местоположение события.
+        description: Описание события (15-300 символов).
+        location: Местоположение события.
         start_date: Дата и время начала.
         end_date: Дата и время окончания (опционально).
         max_participants: Максимальное количество участников (опционально).
@@ -49,8 +49,8 @@ class EventBaseModel(BaseModel):
     )
 
     title: str = Field(min_length=3, max_length=50)
-    descriptions: str = Field(min_length=15, max_length=300)
-    locations: EventLocationModel
+    description: str = Field(min_length=15, max_length=300)
+    location: EventLocationModel
     start_date: datetime = Field(alias='startDate')
     end_date: Optional[datetime] = Field(default=None, alias='endDate')
     max_participants: Optional[int] = Field(default=None, alias='maxParticipants')
@@ -87,8 +87,8 @@ class EventUpdateModel(BaseModel):
 
     Атрибуты:
         title: Название события (3-50 символов).
-        descriptions: Описание события (15-300 символов).
-        locations: Местоположение события.
+        description: Описание события (15-300 символов).
+        location: Местоположение события.
         start_date: Дата и время начала.
         end_date: Дата и время окончания.
         max_participants: Максимальное количество участников.
@@ -101,13 +101,20 @@ class EventUpdateModel(BaseModel):
     )
 
     title: Optional[str] = Field(default=None, min_length=3, max_length=50)
-    descriptions: Optional[str] = Field(default=None, min_length=15, max_length=300)
-    locations: Optional[EventLocationModel] = None
+    description: Optional[str] = Field(default=None, min_length=15, max_length=300)
+    location: Optional[EventLocationModel] = None
     start_date: Optional[datetime] = Field(default=None, alias='startDate')
     end_date: Optional[datetime] = Field(default=None, alias='endDate')
     max_participants: Optional[int] = Field(default=None, alias='maxParticipants')
     status: Optional[EventStatusEnum] = None
     recurrence: Optional[RecurrenceEnum] = None
+
+    @model_validator(mode='after')
+    def validate_dates(self) -> 'EventUpdateModel':
+
+        if self.end_date and self.end_date < self.start_date:               # type: ignore
+            raise ValueError('The end date of the event cannot be earlier than the start date.')
+        return self
 
 
 class EventResponseModel(EventBaseModel):
