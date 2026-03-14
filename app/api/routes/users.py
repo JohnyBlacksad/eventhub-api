@@ -4,7 +4,7 @@
 получение, обновление, удаление.
 """
 
-from fastapi import HTTPException, status, Depends, APIRouter
+from fastapi import status, Depends, APIRouter
 from app.schemas.users import UserResponseModel, UserUpdateModel
 from app.api.deps import get_current_user
 from app.services.user import UserService

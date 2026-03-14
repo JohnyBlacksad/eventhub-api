@@ -3,7 +3,7 @@
 Модуль содержит endpoints для регистрации, логина и обновления токенов.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from app.schemas.users import UserRegisterModel, UserLoginModel
 from app.schemas.token import TokenModel, RefreshTokenModel
 from app.dependency_container.users_deps import get_auth_service, get_user_service

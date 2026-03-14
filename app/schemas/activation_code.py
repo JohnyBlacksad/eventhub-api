@@ -19,6 +19,14 @@ class ActivationCodeModelResponse(ActivationCodeBaseModel):
     is_used: bool = Field(default=False, alias='isUsed')
     created_at: datetime = Field(alias='createdAt')
     activated_at: Optional[datetime] = Field(default=None, alias='activatedAt')
+    activated_by: Optional[str] = Field(default=None, alias='activatedBy')
 
 class GetActivationCodesResponseModel(BaseModel):
     codes: list[ActivationCodeModelResponse]
+
+class CodeFiltersResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+    is_used: Optional[bool] = Field(default=None, alias='isUsed')
+    role: Optional[UserRoleEnum] = None
+    created_at: Optional[datetime] = Field(default=None, alias='createdAt')
+    activated_at: Optional[datetime] = Field(default=None, alias='activatedAt')

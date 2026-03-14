@@ -4,10 +4,14 @@
 активации роли ORGANIZER.
 """
 
+from typing import Optional
+
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ReturnDocument
 from datetime import datetime, timezone
+
+from app.schemas.activation_code import CodeFiltersResponse
 
 
 class ActivationCodeDAO:
@@ -32,8 +36,30 @@ class ActivationCodeDAO:
             collection: Коллекция MongoDB для кодов активации.
         """
         await collection.create_index([('code', 1)], unique=True)
+        await collection.create_index([('activated_by', 1)])
 
-    async def use_code(self, code_str: str) -> dict | None:
+    def __build_filter(self, filter_obj = None):
+
+        mongo_query = {}
+
+        if not filter_obj:
+            return mongo_query
+
+        if getattr(filter_obj, 'is_used', None) is not None:
+            mongo_query['is_used'] = filter_obj.is_used
+
+        if getattr(filter_obj, 'role', None):
+            mongo_query['role'] = filter_obj.role
+
+        if getattr(filter_obj, 'created_at', None):
+            mongo_query.setdefault('created_at', {})['$gte'] = filter_obj.created_at
+
+        if getattr(filter_obj, 'activated_at', None):
+            mongo_query.setdefault('activated_at', {})['$gte'] = filter_obj.activated_at
+
+        return mongo_query
+
+    async def use_code(self, code_str: str, user_id: str) -> dict | None:
         """Использовать код активации (пометить как использованный).
 
         Args:
@@ -43,7 +69,14 @@ class ActivationCodeDAO:
             Документ кода до обновления, или None если не найден.
         """
         code = {'code': code_str, 'is_used': False}
-        filter = {'$set': {'is_used': True, 'activated_at': datetime.now(timezone.utc)}}
+        filter = {
+            '$set':
+            {
+                'is_used': True,
+                'activated_at': datetime.now(timezone.utc),
+                'activated_by': ObjectId(user_id)
+            }
+        }
         result = await self.collection.find_one_and_update(
             code,
             filter,
@@ -94,10 +127,10 @@ class ActivationCodeDAO:
         result = await self.collection.find_one(payload)
         return result
 
-    async def get_codes(self, skip: int = 0, limit: int = 100):
+    async def get_codes(self, skip: int = 0, limit: int = 100, filters: Optional[CodeFiltersResponse] = None):
         '''Получить список всех кодов'''
-
-        cursor = (self.collection.find()
+        query = self.__build_filter(filter_obj=filters)
+        cursor = (self.collection.find(query)
                   .sort('created_at', -1)
                   .skip(skip)
                   .limit(limit))

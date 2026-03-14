@@ -182,7 +182,7 @@ class UserService:
 
         return await self.user_dao.delete_user(user_id)
 
-    async def upgrade_to_organizer(self, user_id: str, code_str: str):
+    async def upgrade_role(self, user_id: str, code_str: str):
         """Повысить роль пользователя до ORGANIZER по коду активации.
 
         Проверяет код активации, помечает его как использованный
@@ -198,7 +198,7 @@ class UserService:
         Raises:
             HTTPException: 403 если код невалиден или уже использован.
         """
-        code_data = await self.code_dao.use_code(code_str)
+        code_data = await self.code_dao.use_code(code_str, user_id)
 
         if not code_data:
             raise HTTPException(
