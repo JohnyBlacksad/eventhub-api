@@ -66,3 +66,14 @@ async def delete_user(
     """
     await user_service.delete_user(user.id)
     return
+
+@user_router.post('/upgrade', response_model=UserResponseModel)
+async def upgrade_role(
+    code: str,
+    current_user: UserResponseModel = Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service)
+):
+    return await user_service.upgrade_role(
+        user_id=(str(current_user.id)),
+        code_str=code
+    )
