@@ -6,7 +6,7 @@
 from bson import ObjectId
 from app.database import db_client
 from motor.motor_asyncio import AsyncIOMotorCollection
-from pymongo import ReturnDocument, ASCENDING, TEXT
+from pymongo import ReturnDocument, ASCENDING, TEXT, DESCENDING
 
 
 class EventDAO:
@@ -30,7 +30,7 @@ class EventDAO:
         Создаёт индексы для:
         - startDate (ASCENDING) — сортировка по дате начала
         - title (TEXT) — полнотекстовый поиск
-        - locations.city + status (составной) — фильтрация по городу и статусу
+        - location.city + status (составной) — фильтрация по городу и статусу
         - deleted_at (TTL) — автоматическое удаление
 
         Args:
@@ -38,9 +38,43 @@ class EventDAO:
         """
         await collection.create_index([("startDate", ASCENDING)])
         await collection.create_index([('title', TEXT)])
-        await collection.create_index([('locations.city', ASCENDING),
+        await collection.create_index([('location.city', ASCENDING),
                                        ('status', ASCENDING)])
         await collection.create_index([('deleted_at', ASCENDING)], expireAfterSeconds=0)
+
+    def __build_filter(self, filter_obj) -> dict:
+        '''Внутренний фильтр-маппер: Превращает объект фильтров в запрос к MongoDB
+
+        - filtr_obj: Объект фильтра
+
+        returns:
+            dict: Словарь с нормализованными данными для передачи в Mongo DB.
+        '''
+        mongo_query = {}
+
+        if not filter_obj:
+            return mongo_query
+
+        if getattr(filter_obj, 'status', None):
+            mongo_query['status'] = filter_obj.status
+
+        if getattr(filter_obj, 'city', None):
+            mongo_query['location.city'] = filter_obj.city
+
+        if getattr(filter_obj, 'country', None):
+            mongo_query['location.country'] = filter_obj.country
+
+        if getattr(filter_obj, 'date_from', None) or getattr(filter_obj, 'date_to', None):
+            mongo_query['startDate'] = {}
+            if filter_obj.date_from:
+                mongo_query['startDate']['$gte'] = filter_obj.date_from
+            if filter_obj.date_to:
+                mongo_query['startDate']['$lte'] = filter_obj.date_to
+
+        if getattr(filter_obj, 'search', None):
+            mongo_query['$text'] = {'$search': filter_obj.search}
+
+        return mongo_query
 
     async def create_event(self, event_data: dict) -> str:
         """Создать новое событие в базе данных.
@@ -69,9 +103,11 @@ class EventDAO:
 
     async def get_events(
             self,
-            filter: dict = None,  # type: ignore
+            filter_obj = None,  # type: ignore
             skip: int = 0,
-            limit: int = 10
+            limit: int = 10,
+            sort_by: str = 'startDate',
+            sort_order: str = 'asc'
     ) -> list[dict]:
         """Получить список событий с пагинацией.
 
@@ -83,9 +119,13 @@ class EventDAO:
         Returns:
             Список документов событий.
         """
+        query = self.__build_filter(filter_obj)
+
+        direction = ASCENDING if sort_order == 'asc' else DESCENDING
+
         cursor = (self.collections
-                  .find(filter or {})
-                  .sort('startDate', ASCENDING)
+                  .find(query)
+                  .sort(sort_by, direction)
                   .skip(skip)
                   .limit(limit)
                 )

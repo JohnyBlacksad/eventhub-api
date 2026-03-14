@@ -4,6 +4,8 @@
 на события в MongoDB.
 """
 
+from typing import Optional
+
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 from datetime import datetime, timezone
@@ -122,3 +124,15 @@ class RegistrationDAO:
         registration = await self.collection.find_one(payload)
 
         return registration
+
+    async def delete_all_registrations_for_event(self, event_id: str) -> bool:
+        payload = {'event_id': ObjectId(event_id)}
+        result = await self.collection.delete_many(payload)
+        return result.deleted_count > 0
+
+    async def set_deletion_time_for_event(self, event_id: str, death_date: Optional[datetime]):
+        result = await self.collection.update_many(
+            {'event_id': ObjectId(event_id)},
+            {'$set': {'deleted_at': death_date}}
+        )
+        return result

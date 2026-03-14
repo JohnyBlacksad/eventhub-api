@@ -6,10 +6,12 @@
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.schemas.enums.user_enums.users_status import UserRoleEnum
 from app.dependency_container.users_deps import (
     get_auth_service,
     get_user_service
 )
+from app.schemas.users import UserResponseModel
 from app.services.auth import AuthService
 from app.services.user import UserService
 
@@ -55,3 +57,14 @@ async def get_current_user(
         )
 
     return user
+
+async def require_role(
+        current_user: UserResponseModel = Depends(get_current_user)):
+
+    if current_user.role not in (UserRoleEnum.ORGANIZER, UserRoleEnum.ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f'Role {current_user.role} is not allowed.'
+        )
+
+    return current_user

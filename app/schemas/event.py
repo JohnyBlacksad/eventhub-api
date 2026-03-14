@@ -132,3 +132,18 @@ class EventResponseModel(EventBaseModel):
     id: PyObjectId = Field(alias='_id')
     created_by: PyObjectId
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class GetEventsModel(BaseModel):
+    events: list[EventResponseModel]
+
+class EventFilterParams(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+    status: Optional[EventStatusEnum] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+    date_from: Optional[datetime] = Field(default=None, alias='dateFrom')
+    date_to: Optional[datetime] = Field(default=None, alias='dateTo')
+    search: Optional[str] = None
+    sort_by: str = Field(default='startDate', alias='sortBy')
+    sort_order: str = Field(default='asc', alias='sortOrder')

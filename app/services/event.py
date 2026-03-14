@@ -3,13 +3,15 @@
 Модуль содержит EventService для бизнес-логики событий:
 создание, чтение, обновление, удаление событий и регистраций.
 """
-
+from bson import ObjectId
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
+from app.config import settings
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
-from app.schemas.event import EventCreateModel, EventResponseModel, EventUpdateModel
+from app.schemas.enums.event_enums.event_enums import EventStatusEnum
+from app.schemas.event import EventCreateModel, EventFilterParams, EventResponseModel, EventUpdateModel
 
 
 class EventService:
@@ -55,7 +57,7 @@ class EventService:
             HTTPException: 500 если событие не создано.
         """
         event_dict = event_data.model_dump(by_alias=True)
-        event_dict['created_by'] = user_id
+        event_dict['created_by'] = ObjectId(user_id)
         event_dict['created_at'] = datetime.now(timezone.utc)
 
         new_id = await self.event_dao.create_event(event_dict)
@@ -93,7 +95,7 @@ class EventService:
 
     async def get_events(
         self,
-        filter: Optional[dict] = None,
+        filters: Optional[EventFilterParams] = None,
         skip: int = 0,
         limit: int = 10
     ) -> list[EventResponseModel]:
@@ -108,9 +110,11 @@ class EventService:
             list[EventResponseModel]: Список событий.
         """
         raw_event_list = await self.event_dao.get_events(
-            filter=filter, # type: ignore
+            filter_obj=filters,                                     # type: ignore
             skip=skip,
-            limit=limit
+            limit=limit,
+            sort_by=filters.sort_by,                                # type: ignore
+            sort_order=filters.sort_order                           # type: ignore
         )
 
         result = [
@@ -155,6 +159,17 @@ class EventService:
             )
 
         data = update_data.model_dump(by_alias=True, exclude_none=True)
+
+        if 'status' in data:
+            new_status = data['status']
+            cleanup_seconds = settings.events_config.cleanup_sec
+            death_date = datetime.now(timezone.utc) + timedelta(seconds=cleanup_seconds)
+            if new_status in [EventStatusEnum.CANCELLED, EventStatusEnum.FINISHED]:
+                data['deleted_at'] = death_date
+                await self.registration_dao.set_deletion_time_for_event(event_id, death_date)
+            else:
+                data['deleted_at'] = None
+
         updated_event = await self.event_dao.update_event(event_id, data)
 
         return EventResponseModel.model_validate(updated_event, from_attributes=True)
@@ -190,7 +205,7 @@ class EventService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail='You are not the creator of this event'
             )
-
+        is_reg_deleted = await self.registration_dao.delete_all_registrations_for_event(event_id) # переменная для дальнейшего логгирования
         result = await self.event_dao.delete_event(event_id)
         return result
 
