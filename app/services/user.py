@@ -37,6 +37,8 @@ class UserService:
         Args:
             user_dao: UserDAO для CRUD операций.
             auth_service: AuthService для хеширования паролей.
+            code_dao: ActivationCodeDAO для операций смены роли.
+            event_dao: EventDAO для операций регистрации и создания событий.
         """
         self.user_dao = user_dao
         self.auth_service = auth_service

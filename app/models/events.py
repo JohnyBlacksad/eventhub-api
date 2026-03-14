@@ -180,3 +180,10 @@ class EventDAO:
         }
         result = await self.collections.find_one(query)
         return result is not None
+
+    async def delete_events_by_user(self, user_id: str) -> bool:
+        '''Удалить все события пользователя'''
+        result = await self.collections.delete_many(
+            {'created_by': ObjectId(user_id)}
+        )
+        return result.deleted_count > 0

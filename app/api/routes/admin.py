@@ -4,7 +4,7 @@
 управление пользователями (ban/unban), кодами активации, событиями.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.api.deps import require_admin
 from app.dependency_container.activation_code_deps import get_activation_code_service
 from app.dependency_container.event_deps import get_event_service
@@ -194,3 +194,21 @@ async def delete_event_admin(
         None: Возвращает 204 No Content при успешном удалении.
     """
     await service.delete_event_for_admin(event_id=event_id)
+
+
+@admin_route.delete('/users/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user_admin(
+    user_id: str,
+    current_user: UserResponseModel = Depends(require_admin),
+    user_service: UserService = Depends(get_user_service),
+    event_service: EventService = Depends(get_event_service)
+):
+    user = await user_service.get_user_by_id(str(user_id))
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User not found'
+        )
+
+    await event_service.delete_all_user_events_and_registrations(str(user_id))
+    await user_service.delete_user(str(user_id))

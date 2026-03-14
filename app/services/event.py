@@ -376,3 +376,13 @@ class EventService:
         registrations = await self.registration_dao.get_user_registrations(user_id)
 
         return registrations
+
+    async def delete_all_user_events_and_registrations(self, user_id: str) -> bool:
+        '''Удаление регистраций и событий пользователя по user_id'''
+
+        is_registrations_deleted = await self.registration_dao.delete_registration_by_user(user_id)
+        is_events_deleted = await self.event_dao.delete_events_by_user(user_id)
+
+        if is_registrations_deleted and is_events_deleted:
+            return True
+        return False

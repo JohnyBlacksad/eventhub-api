@@ -162,3 +162,11 @@ class RegistrationDAO:
             {'$set': {'deleted_at': death_date}}
         )
         return result
+
+    async def delete_registration_by_user(self, user_id: str) -> bool:
+        '''Удалить все регистрации пользователя'''
+        result = await self.collection.delete_many(
+            {'user_id': ObjectId(user_id)}
+        )
+
+        return result.deleted_count > 0
