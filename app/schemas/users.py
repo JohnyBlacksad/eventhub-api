@@ -106,3 +106,15 @@ class UserUpdateModel(BaseModel):
     phone_number: Optional[str] = Field(default=None, min_length=7, max_length=15, alias='phoneNumber')
     password: Optional[SecretStr] = Field(None, min_length=8)
 
+class GetUsersResponseModel(BaseModel):
+    users: list[UserResponseModel]
+
+class UserFilterModel(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+        from_attributes=True
+    )
+
+    role: Optional[str] = None
+    is_banned: Optional[bool] = Field(default=None, alias='isBanned')
+    created_at: Optional[datetime] = Field(default=None, alias='createdAt')

@@ -4,13 +4,15 @@
 регистрация, аутентификация, CRUD операции.
 """
 
+from typing import Optional
+
 from fastapi import HTTPException, status
 from datetime import datetime, timezone
 from app.models.user import UserDAO
 from app.models.activation_code import ActivationCodeDAO
 from app.models.events import EventDAO
 from app.services.auth import AuthService
-from app.schemas.users import UserRegisterModel, UserResponseModel, UserUpdateModel
+from app.schemas.users import GetUsersResponseModel, UserRegisterModel, UserResponseModel, UserUpdateModel
 
 
 class UserService:
@@ -72,6 +74,17 @@ class UserService:
         new_user = await self.user_dao.get_user_by_id(user_id)
 
         return UserResponseModel.model_validate(new_user, from_attributes=True)
+
+    async def get_users(self, skip: int = 0, limit: int = 100, filter_obj: Optional[dict] = None) -> GetUsersResponseModel:
+        raw_users = await self.user_dao.get_users(
+            skip=skip,
+            limit=limit,
+            filter_obj=filter_obj
+        )
+
+        users = [UserResponseModel.model_validate(user, from_attributes=True) for user in raw_users]
+
+        return GetUsersResponseModel(users=users)
 
     async def authenticate_user(self, email: str, password: str):
         """Аутентифицировать пользователя по email и паролю.

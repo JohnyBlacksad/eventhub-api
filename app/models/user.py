@@ -31,6 +31,31 @@ class UserDAO:
         instance = cls(collection)
         await instance.collection.create_index('email', unique=True)
 
+    def __build_filter(self, filter_obj) -> dict:
+        '''Внутренний фильтр-маппер: Превращает объект фильтров в запрос к MongoDB
+
+        - filtr_obj: Объект фильтра
+
+        returns:
+            dict: Словарь с нормализованными данными для передачи в Mongo DB.
+        '''
+        mongo_query = {}
+
+        if not filter_obj:
+            return mongo_query
+
+        if getattr(filter_obj, 'role', None):
+            mongo_query['role'] = filter_obj.role
+
+        if getattr(filter_obj, 'is_banned', None):
+            mongo_query['is_banned'] = filter_obj.is_banned
+
+        if getattr(filter_obj, 'created_at', None):
+            mongo_query['created_at'] = {}
+            mongo_query['created_at']['$gte'] = filter_obj.created_at
+
+        return mongo_query
+
     async def create_user(self, user_data: dict) -> str:
         """Создать нового пользователя в базе данных.
 
@@ -43,6 +68,15 @@ class UserDAO:
         """
         result = await self.collection.insert_one(user_data)
         return str(result.inserted_id)
+
+    async def get_users(self, skip: int = 0, limit: int = 0, filter_obj = None) -> list[dict]:
+        query = self.__build_filter(filter_obj)
+        cursor = (self.collection
+                  .find(query)
+                  .skip(skip)
+                  .limit(limit))
+
+        return await cursor.to_list(length=limit)
 
     async def get_user_by_id(self, user_id: str):
         """Найти пользователя по MongoDB ObjectId.

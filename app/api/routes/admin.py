@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, status
 from app.api.deps import require_admin
 from app.dependency_container.activation_code_deps import get_activation_code_service
 from app.schemas.activation_code import ActivationCodeCreateModel, ActivationCodeModelResponse, CodeFiltersResponse, GetActivationCodesResponseModel
-from app.schemas.users import UserResponseModel
+from app.schemas.users import GetUsersResponseModel, UserFilterModel, UserResponseModel
 from app.dependency_container.users_deps import get_user_service
 from app.services.activation_code import ActivationCodeService
 from app.services.user import UserService
@@ -34,7 +34,7 @@ async def create_activation_code(
 
     return await service.create_code(role=request.role, code=request.code)
 
-@admin_route.get('/activation-codes', response_model=GetActivationCodesResponseModel, status_code=status.HTTP_200_OK)
+@admin_route.get('/activation-code', response_model=GetActivationCodesResponseModel, status_code=status.HTTP_200_OK)
 async def get_activation_codes(
     filters: CodeFiltersResponse = Depends(),
     skip: int = 0,
@@ -55,3 +55,17 @@ async def delete_activation_code(
     service: ActivationCodeService = Depends(get_activation_code_service)
 ):
     await service.delete_code(code_id=code_id)
+
+@admin_route.get('/users', response_model=GetUsersResponseModel)
+async def get_all_users(
+    skip: int = 0,
+    limit: int = 100,
+    filters: UserFilterModel = Depends(),
+    current_user: UserResponseModel = Depends(require_admin),
+    service: UserService = Depends(get_user_service)
+):
+    return await service.get_users(
+        skip=skip,
+        limit=limit,
+        filter_obj=filters.model_dump()
+    )
