@@ -56,6 +56,12 @@ async def get_current_user(
             detail='User not found'
         )
 
+    if user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Your account is banned'
+        )
+
     return user
 
 async def require_role(

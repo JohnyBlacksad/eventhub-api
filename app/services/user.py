@@ -107,6 +107,12 @@ class UserService:
                 detail='User does not exist'
             )
 
+        if user.get('is_banned'):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='User is banned'
+            )
+
         is_valid = await self.auth_service.verify_password(password, user.get('hashed_password'))
 
         if not is_valid:
