@@ -8,7 +8,6 @@ from fastapi import Depends
 from app.database import db_client
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
-from app.models.activation_code import ActivationCodeDAO
 from app.services.event import EventService
 
 
@@ -72,24 +71,3 @@ def get_event_service(
         event_dao=event_dao,
         registration_dao=registration_dao
     )
-
-
-def get_activation_code_collection():
-    """Получить коллекцию org_code из MongoDB.
-
-    Returns:
-        Коллекция MongoDB для кодов активации.
-    """
-    return db_client.get_db()['org_code']  # type: ignore
-
-
-def get_activation_code_dao(collection=Depends(get_activation_code_collection)) -> ActivationCodeDAO:
-    """Создать ActivationCodeDAO с зависимостью от коллекции.
-
-    Args:
-        collection: Коллекция MongoDB (из get_activation_code_collection).
-
-    Returns:
-        ActivationCodeDAO: Data Access Object для кодов активации.
-    """
-    return ActivationCodeDAO(collection)
