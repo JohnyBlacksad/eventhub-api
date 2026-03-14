@@ -19,3 +19,6 @@ class ActivationCodeModelResponse(ActivationCodeBaseModel):
     is_used: bool = Field(default=False, alias='isUsed')
     created_at: datetime = Field(alias='createdAt')
     activated_at: Optional[datetime] = Field(default=None, alias='activatedAt')
+
+class GetActivationCodesResponseModel(BaseModel):
+    codes: list[ActivationCodeModelResponse]

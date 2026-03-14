@@ -79,3 +79,28 @@ class ActivationCodeDAO:
         payload = {'_id': ObjectId(code_id)}
         result = await self.collection.delete_one(payload)
         return result.deleted_count > 0
+
+    async def get_code(self, code_id: str):
+        '''Получить один код по code id
+
+        Args:
+            code_id: MongoDB ObjectId кода в виде строки.
+
+        Returns:
+            Документ кода в виде словаря
+        '''
+
+        payload = {'_id': ObjectId(code_id)}
+        result = await self.collection.find_one(payload)
+        return result
+
+    async def get_codes(self, skip: int = 0, limit: int = 100):
+        '''Получить список всех кодов'''
+
+        cursor = (self.collection.find()
+                  .sort('created_at', -1)
+                  .skip(skip)
+                  .limit(limit))
+
+        return await cursor.to_list(length=limit)
+
