@@ -50,6 +50,7 @@ class UserBaseModel(BaseModel):
         alias='phoneNumber'
     )
     role: Optional[UserRoleEnum] = UserRoleEnum.USER
+    is_banned: Optional[bool] = Field(default=False, alias='isBanned')
 
 
 class UserRegisterModel(UserBaseModel):
@@ -90,6 +91,7 @@ class UserResponseModel(UserBaseModel):
     last_name: str = Field(..., alias='lastName')                   # type: ignore
     created_at: datetime
     role: Optional[UserRoleEnum] = UserRoleEnum.USER
+    is_banned: Optional[bool] = Field(default=False, alias='isBanned')
 
 
 class UserUpdateModel(BaseModel):

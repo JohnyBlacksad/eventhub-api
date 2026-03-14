@@ -107,3 +107,13 @@ class UserDAO:
             return_document=ReturnDocument.AFTER
         )
         return result
+
+    async def set_ban_user(self, user_id: str, is_banned: bool):
+
+        result = await self.collection.find_one_and_update(
+            {'_id': ObjectId(user_id)},
+            {'$set': {'is_banned': is_banned}},
+            return_document=ReturnDocument.AFTER
+        )
+
+        return result

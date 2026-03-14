@@ -211,3 +211,19 @@ class UserService:
         updated_user = await self.user_dao.update_user_role(user_id, new_role)
 
         return UserResponseModel.model_validate(updated_user, from_attributes=True)
+
+    async def set_ban_user(self, user_id: str, is_banned: bool) -> UserResponseModel:
+        current_user = await self.user_dao.get_user_by_id(user_id)
+
+        if not current_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='User not found.'
+            )
+
+        updated_user = await self.user_dao.set_ban_user(
+            user_id=user_id,
+            is_banned=is_banned
+        )
+
+        return UserResponseModel.model_validate(updated_user, from_attributes=True)
