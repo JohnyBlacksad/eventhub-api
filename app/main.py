@@ -10,9 +10,8 @@ from app.database import db_client
 from app.dependency_container.users_deps import get_user_collections
 from app.dependency_container.event_deps import (
     get_events_collection,
-    get_registrations_collection,
-    get_activation_code_collection,
-)
+    get_registrations_collection)
+from app.dependency_container.activation_code_deps import get_activation_code_collection
 from app.models.user import UserDAO
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO

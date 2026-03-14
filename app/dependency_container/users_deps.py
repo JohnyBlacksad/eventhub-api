@@ -11,8 +11,8 @@ from app.models.activation_code import ActivationCodeDAO
 from app.models.events import EventDAO
 from app.services.auth import AuthService
 from app.services.user import UserService
-from app.dependency_container.event_deps import get_activation_code_dao, get_event_dao
-
+from app.dependency_container.event_deps import get_event_dao
+from app.dependency_container.activation_code_deps import get_activation_code_dao
 
 def get_user_collections():
     """Получить коллекцию users из MongoDB.

@@ -62,6 +62,7 @@ class ActivationCodeService:
 
         code_id = await self.code_dao.create_code(code_data)
         created_code = await self.code_dao.get_code(code_id)
+        created_code['_id'] = str(created_code['_id'])              # type: ignore
         return ActivationCodeModelResponse.model_validate(created_code)
 
     async def get_codes(self, skip: int = 0, limit: int = 100, filters: Optional[CodeFiltersResponse] = None) -> GetActivationCodesResponseModel:
@@ -81,7 +82,13 @@ class ActivationCodeService:
             filters=filters
         )
 
-        codes = [ActivationCodeModelResponse.model_validate(code, from_attributes=True) for code in raw_list]
+        # Конвертируем ObjectId в строку для каждого кода
+        codes = []
+        for code in raw_list:
+            code['_id'] = str(code['_id'])
+            if code.get('activated_by'):
+                code['activated_by'] = str(code['activated_by'])
+            codes.append(ActivationCodeModelResponse.model_validate(code, from_attributes=True))
 
         return GetActivationCodesResponseModel(codes=codes)
 

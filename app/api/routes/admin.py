@@ -169,11 +169,12 @@ async def get_all_events(
     Returns:
         GetEventsModel: Список событий.
     """
-    return await service.get_events(
+    events = await service.get_events(
         filters=filters,
         skip=skip,
         limit=limit
     )
+    return GetEventsModel(events=events)
 
 
 @admin_route.delete('/events/{event_id}', status_code=status.HTTP_204_NO_CONTENT)
