@@ -60,7 +60,17 @@ async def get_current_user(
 
 async def require_role(
         current_user: UserResponseModel = Depends(get_current_user)):
+    """Проверить роль текущего пользователя (ORGANIZER или ADMIN).
 
+    Args:
+        current_user: Данные текущего пользователя.
+
+    Returns:
+        UserResponseModel: Текущий пользователь если роль валидна.
+
+    Raises:
+        HTTPException: 403 если роль не ORGANIZER и не ADMIN.
+    """
     if current_user.role not in (UserRoleEnum.ORGANIZER, UserRoleEnum.ADMIN):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -69,9 +79,20 @@ async def require_role(
 
     return current_user
 
+
 async def require_admin(
         current_user: UserResponseModel = Depends(get_current_user)):
+    """Проверить роль текущего пользователя (только ADMIN).
 
+    Args:
+        current_user: Данные текущего пользователя.
+
+    Returns:
+        UserResponseModel: Текущий пользователь если роль ADMIN.
+
+    Raises:
+        HTTPException: 403 если роль не ADMIN.
+    """
     if current_user.role != UserRoleEnum.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

@@ -51,8 +51,10 @@ class UserDAO:
             mongo_query['is_banned'] = filter_obj.is_banned
 
         if getattr(filter_obj, 'created_at', None):
-            mongo_query['created_at'] = {}
-            mongo_query['created_at']['$gte'] = filter_obj.created_at
+            mongo_query.setdefault('created_at', {})['$gte'] = filter_obj.created_at
+
+        if getattr(filter_obj, 'created_at_to', None):
+            mongo_query.setdefault('created_at', {})['$lte'] = filter_obj.created_at_to
 
         return mongo_query
 
@@ -70,6 +72,16 @@ class UserDAO:
         return str(result.inserted_id)
 
     async def get_users(self, skip: int = 0, limit: int = 0, filter_obj = None) -> list[dict]:
+        """Получить список пользователей с пагинацией и фильтрами.
+
+        Args:
+            skip: Количество пропускаемых записей.
+            limit: Максимальное количество записей.
+            filter_obj: Объект фильтров (role, is_banned, created_at, created_at_to).
+
+        Returns:
+            list[dict]: Список документов пользователей.
+        """
         query = self.__build_filter(filter_obj)
         cursor = (self.collection
                   .find(query)
@@ -135,6 +147,15 @@ class UserDAO:
         return result.deleted_count > 0
 
     async def update_user_role(self, user_id: str, new_role: str):
+        """Обновить роль пользователя.
+
+        Args:
+            user_id: MongoDB ObjectId пользователя в виде строки.
+            new_role: Новая роль пользователя (user, organizer, admin).
+
+        Returns:
+            Обновлённый документ пользователя.
+        """
         result = await self.collection.find_one_and_update(
             {'_id': ObjectId(user_id)},
             {'$set': {'role': new_role}},
@@ -143,7 +164,15 @@ class UserDAO:
         return result
 
     async def set_ban_user(self, user_id: str, is_banned: bool):
+        """Установить статус бана пользователя.
 
+        Args:
+            user_id: MongoDB ObjectId пользователя в виде строки.
+            is_banned: Флаг бана (True — забанен, False — разбанен).
+
+        Returns:
+            Обновлённый документ пользователя.
+        """
         result = await self.collection.find_one_and_update(
             {'_id': ObjectId(user_id)},
             {'$set': {'is_banned': is_banned}},

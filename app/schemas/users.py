@@ -118,3 +118,4 @@ class UserFilterModel(BaseModel):
     role: Optional[str] = None
     is_banned: Optional[bool] = Field(default=None, alias='isBanned')
     created_at: Optional[datetime] = Field(default=None, alias='createdAt')
+    created_at_to: Optional[datetime] = Field(default=None, alias='createdAtTo')

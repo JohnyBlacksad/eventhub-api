@@ -102,7 +102,7 @@ class RegistrationDAO:
         result = await cursor.to_list(length=limit)
         return result
 
-    async def get_user_registrations(self, user_id: str) -> list[dict]:
+    async def get_user_registrations(self, user_id: str, limit: int = 100) -> list[dict]:
         """Получить список регистраций пользователя.
 
         Args:
@@ -112,10 +112,19 @@ class RegistrationDAO:
             Список документов регистраций пользователя.
         """
         cursor = self.collection.find({'user_id': ObjectId(user_id)})
-        result = await cursor.to_list(length=100)
+        result = await cursor.to_list(length=limit)
         return result
 
     async def get_existing_registration(self, event_id: str, user_id: str) -> dict | None:
+        """Проверить существующую регистрацию пользователя на событие.
+
+        Args:
+            event_id: MongoDB ObjectId события в виде строки.
+            user_id: MongoDB ObjectId пользователя в виде строки.
+
+        Returns:
+            dict | None: Документ регистрации или None если не найдена.
+        """
         payload = {
             'event_id': ObjectId(event_id),
             "user_id": ObjectId(user_id)
@@ -126,11 +135,28 @@ class RegistrationDAO:
         return registration
 
     async def delete_all_registrations_for_event(self, event_id: str) -> bool:
+        """Удалить все регистрации на событие.
+
+        Args:
+            event_id: MongoDB ObjectId события в виде строки.
+
+        Returns:
+            bool: True если регистрации удалены.
+        """
         payload = {'event_id': ObjectId(event_id)}
         result = await self.collection.delete_many(payload)
         return result.deleted_count > 0
 
     async def set_deletion_time_for_event(self, event_id: str, death_date: Optional[datetime]):
+        """Установить время удаления для всех регистраций на событие.
+
+        Args:
+            event_id: MongoDB ObjectId события в виде строки.
+            death_date: Дата и время удаления.
+
+        Returns:
+            Результат операции обновления.
+        """
         result = await self.collection.update_many(
             {'event_id': ObjectId(event_id)},
             {'$set': {'deleted_at': death_date}}

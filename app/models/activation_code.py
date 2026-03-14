@@ -38,8 +38,15 @@ class ActivationCodeDAO:
         await collection.create_index([('code', 1)], unique=True)
         await collection.create_index([('activated_by', 1)])
 
-    def __build_filter(self, filter_obj = None):
+    def __build_filter(self, filter_obj = None) -> dict:
+        """Построить MongoDB query из объекта фильтров.
 
+        Args:
+            filter_obj: Объект фильтров (is_used, role, created_at, activated_at).
+
+        Returns:
+            dict: Словарь с MongoDB query для фильтрации.
+        """
         mongo_query = {}
 
         if not filter_obj:
@@ -113,22 +120,30 @@ class ActivationCodeDAO:
         result = await self.collection.delete_one(payload)
         return result.deleted_count > 0
 
-    async def get_code(self, code_id: str):
-        '''Получить один код по code id
+    async def get_code(self, code_id: str) -> dict | None:
+        """Получить код активации по ID.
 
         Args:
             code_id: MongoDB ObjectId кода в виде строки.
 
         Returns:
-            Документ кода в виде словаря
-        '''
-
+            dict | None: Документ кода в виде словаря, или None если не найден.
+        """
         payload = {'_id': ObjectId(code_id)}
         result = await self.collection.find_one(payload)
         return result
 
-    async def get_codes(self, skip: int = 0, limit: int = 100, filters: Optional[CodeFiltersResponse] = None):
-        '''Получить список всех кодов'''
+    async def get_codes(self, skip: int = 0, limit: int = 100, filters: Optional[CodeFiltersResponse] = None) -> list[dict]:
+        """Получить список кодов активации с пагинацией и фильтрами.
+
+        Args:
+            skip: Количество пропускаемых записей.
+            limit: Максимальное количество записей.
+            filters: Объект фильтров (is_used, role, created_at, activated_at).
+
+        Returns:
+            list[dict]: Список документов кодов.
+        """
         query = self.__build_filter(filter_obj=filters)
         cursor = (self.collection.find(query)
                   .sort('created_at', -1)

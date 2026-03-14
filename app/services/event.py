@@ -205,7 +205,7 @@ class EventService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail='You are not the creator of this event'
             )
-        is_reg_deleted = await self.registration_dao.delete_all_registrations_for_event(event_id) # переменная для дальнейшего логгирования
+        await self.registration_dao.delete_all_registrations_for_event(event_id)
         result = await self.event_dao.delete_event(event_id)
         return result
 
@@ -232,6 +232,7 @@ class EventService:
                 detail='Event not found'
             )
 
+        await self.registration_dao.delete_all_registrations_for_event(event_id)
         result = await self.event_dao.delete_event(event_id)
         return result
 

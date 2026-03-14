@@ -24,5 +24,13 @@ def get_activation_code_dao(collection=Depends(get_activation_code_collection)) 
     """
     return ActivationCodeDAO(collection)
 
-def get_activation_code_service(code_dao: ActivationCodeDAO = Depends(get_activation_code_dao)):
+def get_activation_code_service(code_dao: ActivationCodeDAO = Depends(get_activation_code_dao)) -> ActivationCodeService:
+    """Создать ActivationCodeService с зависимостью.
+
+    Args:
+        code_dao: ActivationCodeDAO (из get_activation_code_dao).
+
+    Returns:
+        ActivationCodeService: Сервис для бизнес-логики кодов активации.
+    """
     return ActivationCodeService(code_dao=code_dao)
