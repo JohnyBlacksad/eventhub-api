@@ -19,7 +19,6 @@ from app.models.activation_code import ActivationCodeDAO
 from app.api.api import main_router
 from app.middleware.logging import LoggingMiddleware
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Управление жизненным циклом приложения.

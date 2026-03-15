@@ -62,7 +62,7 @@
                         "type": "loki",
                         "uid": "loki"
                     },
-                    "expr": "sum(count_over_time({service=\"api\"} | json | status_code >= 500 [5m]))",
+                    "expr": "sum(count_over_time({service=\"api\"} | json | logger=\"eventhub.middleware\" | status_code >= 500 [5m]))",
                     "legendFormat": "5xx Errors",
                     "refId": "A"
                 }
@@ -88,7 +88,7 @@
                         "type": "loki",
                         "uid": "loki"
                     },
-                    "expr": "sum(count_over_time({service=\"api\"} [5m]))",
+                    "expr": "sum(count_over_time({service=\"api\"}[5m]))",
                     "legendFormat": "Total Requests",
                     "refId": "A"
                 }
@@ -114,7 +114,7 @@
                         "type": "loki",
                         "uid": "loki"
                     },
-                    "expr": "sum by (method) (count_over_time({service=\"api\"} | json [5m]))",
+                    "expr": "sum by (method) (count_over_time({service=\"api\"} | json | logger=\"eventhub.middleware\" [5m]))",
                     "legendFormat": "{{method}}",
                     "refId": "A"
                 }
@@ -140,7 +140,7 @@
                         "type": "loki",
                         "uid": "loki"
                     },
-                    "expr": "{service=\"api\"} | json | status_code >= 400",
+                    "expr": "{service=\"api\"} | json | logger=\"eventhub.middleware\" | status_code >= 400",
                     "refId": "A"
                 }
             ],
@@ -148,7 +148,7 @@
             "type": "logs"
         }
     ],
-    "refresh": "5s",
+    "refresh": "30s",
     "schemaVersion": 38,
     "style": "dark",
     "tags": ["loki", "api", "logs"],

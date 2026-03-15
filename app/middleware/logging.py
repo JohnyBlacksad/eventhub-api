@@ -5,13 +5,13 @@ Middleware для логирования HTTP запросов.
 """
 
 import time
-import json
 from typing import Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.utils.logger import setup_logger
 
 logger = setup_logger('eventhub.middleware')
+
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     """
@@ -34,21 +34,37 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         """
 
         start_time = time.time()
-        client_host = request.client.host if request.client else 'unknown'
+        #status_code = 500
+        #response = None
 
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:
+            # Логируем 5xx ошибку
+            duration = time.time() - start_time
+            logger.info(
+                f"{request.method} {request.url.path}",
+                extra={
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status_code": 500,
+                    "duration_ms": round(duration * 1000, 2),
+                    "client_ip": request.client.host if request.client else 'unknown',
+                    "user_agent": request.headers.get("user-agent", "unknown"),
+                }
+            )
+            raise
 
+        # Логируем успешные запросы
         duration = time.time() - start_time
-
         logger.info(
             f"{request.method} {request.url.path}",
             extra={
                 "method": request.method,
                 "path": request.url.path,
-                "query": str(request.url.query) if request.url.query else None,
                 "status_code": response.status_code,
                 "duration_ms": round(duration * 1000, 2),
-                "client_ip": client_host,
+                "client_ip": request.client.host if request.client else 'unknown',
                 "user_agent": request.headers.get("user-agent", "unknown"),
             }
         )
