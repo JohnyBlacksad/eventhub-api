@@ -1,6 +1,36 @@
+# Poetry / venv
+.venv/
 .venv
-__pycache__
-.git
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Testing
+.pytest_cache/
+.coverage
+reports/
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+
+# Env
 .env
-tests
+
+# Tests
+tests/
+
+# Summarys
 summarys/
+
+# Docker
+*.log
