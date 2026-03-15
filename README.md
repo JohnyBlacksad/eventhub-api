@@ -263,8 +263,8 @@ curl -X POST http://localhost:8001/api/v1/events/{event_id}/register \
 
 ```
 ┌─────────────────┐     ┌──────────┐     ┌──────────┐     ┌───────────┐
-│   FastAPI API   │────▶│ Promtail │────▶│   Loki   │◀────│  Grafana  │
-│   (JSON logs)   │     │  (agent) │     │ (storage) │     │   (UI)    │
+│   FastAPI API   │ ──> │ Promtail │ ──> │   Loki   │ <── │  Grafana  │
+│   (JSON logs)   │     │  (agent) │     │ (storage)│     │   (UI)    │
 └─────────────────┘     └──────────┘     └──────────┘     └───────────┘
 ```
 
