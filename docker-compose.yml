@@ -7,6 +7,8 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    networks:
+      - eventhub
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
@@ -23,9 +25,15 @@ services:
     environment:
       - MONGO_DB.URL=mongodb://mongodb:27017
       - MONGO_DB.DB_NAME=eventhub
+    networks:
+      - eventhub
     depends_on:
       mongodb:
         condition: service_healthy
 
 volumes:
   mongodb_data:
+
+networks:
+  eventhub:
+    driver: bridge

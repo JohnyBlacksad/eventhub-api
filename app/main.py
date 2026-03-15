@@ -17,6 +17,7 @@ from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
 from app.models.activation_code import ActivationCodeDAO
 from app.api.api import main_router
+from app.middleware.logging import LoggingMiddleware
 
 
 @asynccontextmanager
@@ -47,6 +48,7 @@ app = FastAPI(
     version='0.1.0',
     lifespan=lifespan)
 
+app.add_middleware(LoggingMiddleware)
 
 @app.get('/health', tags=['System'])
 async def health_check():
