@@ -203,6 +203,17 @@ async def delete_user_admin(
     user_service: UserService = Depends(get_user_service),
     event_service: EventService = Depends(get_event_service)
 ):
+    """Удалить пользователя и все связанные данные (только ADMIN).
+
+    Args:
+        user_id: MongoDB ObjectId пользователя.
+        current_user: Текущий пользователь (ADMIN).
+        user_service: Сервис пользователей.
+        event_service: Сервис событий.
+
+    Returns:
+        None: Возвращает 204 No Content при успешном удалении.
+    """
     user = await user_service.get_user_by_id(str(user_id))
     if not user:
         raise HTTPException(
@@ -210,5 +221,12 @@ async def delete_user_admin(
             detail='User not found'
         )
 
+
     await event_service.delete_all_user_events_and_registrations(str(user_id))
-    await user_service.delete_user(str(user_id))
+
+    is_deleted = await user_service.delete_user_by_admin(str(user_id))
+    if not is_deleted:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='Failed to delete user'
+        )

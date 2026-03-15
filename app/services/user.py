@@ -234,6 +234,15 @@ class UserService:
         return UserResponseModel.model_validate(updated_user, from_attributes=True)
 
     async def set_ban_user(self, user_id: str, is_banned: bool) -> UserResponseModel:
+        """Забанить или разбанить пользователя.
+
+        Args:
+            user_id: MongoDB ObjectId пользователя.
+            is_banned: Флаг бана (True — забанить, False — разбанить).
+
+        Returns:
+            UserResponseModel: Обновлённые данные пользователя.
+        """
         current_user = await self.user_dao.get_user_by_id(user_id)
 
         if not current_user:
@@ -248,3 +257,19 @@ class UserService:
         )
 
         return UserResponseModel.model_validate(updated_user, from_attributes=True)
+
+
+    async def delete_user_by_admin(self, user_id: str) -> bool:
+        '''Удаляет пользователя (Только для ADMIN)'''
+
+        user = await self.user_dao.get_user_by_id(user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='User not found'
+            )
+
+        result = await self.user_dao.delete_user(user_id)
+
+        return result

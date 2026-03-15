@@ -87,8 +87,8 @@ class UserResponseModel(UserBaseModel):
     """
     id: PyObjectId = Field(alias='_id')
     email: EmailStr                                                 # type: ignore
-    first_name: str = Field(..., alias='firstName')                 # type: ignore
-    last_name: str = Field(..., alias='lastName')                   # type: ignore
+    first_name: Optional[str] = Field(default=None, alias='firstName')
+    last_name: Optional[str] = Field(default=None, alias='lastName')
     created_at: datetime
     role: Optional[UserRoleEnum] = UserRoleEnum.USER
     is_banned: Optional[bool] = Field(default=False, alias='isBanned')
