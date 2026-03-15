@@ -34,8 +34,17 @@ class JSONFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
 
-        if hasattr(record, 'extra_data'):
-            log_data.update(record.extra_data)
+        skip_attrs = {
+            'name', 'msg', 'args', 'created', 'filename', 'funcName',
+            'levelname', 'levelno', 'lineno', 'module', 'msecs',
+            'pathname', 'process', 'processName', 'relativeCreated',
+            'stack_info', 'exc_info', 'exc_text', 'thread', 'threadName',
+            'message', 'asctime', 'logger'
+        }
+
+        for key, value in record.__dict__.items():
+            if key not in skip_attrs:
+                log_data[key] = value
 
         if record.exc_info:
             log_data['exc_info'] = self.formatException(record.exc_info)

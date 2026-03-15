@@ -40,18 +40,17 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
         duration = time.time() - start_time
 
-        log_entry = {
-            'timestamp': time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()),
-            'type': 'request',
-            'method': request.method,
-            'path': request.url.path,
-            'query': str(request.url.query) if request.url.query else None,
-            'status_code': response.status_code,
-            'duration_ms': round(duration * 1000, 2),
-            'client_ip': client_host,
-            'user_agent': request.headers.get('user-agent', None),
-        }
-
-        logger.info(f"{request.method} {request.url.path}", extra={"extra_data": log_entry})
+        logger.info(
+            f"{request.method} {request.url.path}",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "query": str(request.url.query) if request.url.query else None,
+                "status_code": response.status_code,
+                "duration_ms": round(duration * 1000, 2),
+                "client_ip": client_host,
+                "user_agent": request.headers.get("user-agent", "unknown"),
+            }
+        )
 
         return response
