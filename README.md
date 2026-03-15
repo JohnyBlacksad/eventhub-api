@@ -262,10 +262,10 @@ curl -X POST http://localhost:8001/api/v1/events/{event_id}/register \
 ### Архитектура логирования
 
 ```
-┌─────────────────┐     ┌──────────┐     ┌──────────┐     ┌───────────┐
-│   FastAPI API   │ ──> │ Promtail │ ──> │   Loki   │ <── │  Grafana  │
-│   (JSON logs)   │     │  (agent) │     │ (storage)│     │   (UI)    │
-└─────────────────┘     └──────────┘     └──────────┘     └───────────┘
+              ┌─────────────────┐     ┌──────────┐     ┌──────────┐     ┌───────────┐
+              │   FastAPI API   │ ──> │ Promtail │ ──> │   Loki   │ <── │  Grafana  │
+              │   (JSON logs)   │     │  (agent) │     │ (storage)│     │   (UI)    │
+              └─────────────────┘     └──────────┘     └──────────┘     └───────────┘
 ```
 
 1. **Middleware** (`app/middleware/logging.py`) логирует каждый HTTP запрос в JSON формате
