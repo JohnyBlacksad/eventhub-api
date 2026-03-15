@@ -9,6 +9,7 @@ from app.api.deps import require_admin
 from app.dependency_container.activation_code_deps import get_activation_code_service
 from app.dependency_container.event_deps import get_event_service
 from app.schemas.activation_code import ActivationCodeCreateModel, ActivationCodeModelResponse, CodeFiltersResponse, GetActivationCodesResponseModel
+from app.schemas.enums.user_enums.users_status import UserRoleEnum
 from app.schemas.event import EventFilterParams, GetEventsModel
 from app.schemas.users import GetUsersResponseModel, UserFilterModel, UserResponseModel
 from app.dependency_container.users_deps import get_user_service
@@ -230,3 +231,27 @@ async def delete_user_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to delete user'
         )
+
+@admin_route.put('/users/{user_id}/role', response_model=UserResponseModel)
+async def change_user_role_admin(
+    user_id: str,
+    user_role: UserRoleEnum,
+    current_user: UserResponseModel = Depends(require_admin),
+    service: UserService = Depends(get_user_service)
+):
+
+    """Изменить роль пользователя (только ADMIN).
+
+    Args:
+        user_id: MongoDB ObjectId пользователя.
+        user_role: Enum со строковыми значениями (user, organizer, admin)
+        current_user: Текущий пользователь (ADMIN).
+        service: Сервис пользователей.
+
+    Returns:
+        UserResponseModel: Возвращает модель пользователя с обновленной ролью.
+    """
+
+    response = await service.change_user_role(user_id, user_role)
+
+    return response

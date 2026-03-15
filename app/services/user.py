@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from app.models.user import UserDAO
 from app.models.activation_code import ActivationCodeDAO
 from app.models.events import EventDAO
+from app.schemas.enums.user_enums.users_status import UserRoleEnum
 from app.services.auth import AuthService
 from app.schemas.users import GetUsersResponseModel, UserRegisterModel, UserResponseModel, UserUpdateModel
 
@@ -273,3 +274,27 @@ class UserService:
         result = await self.user_dao.delete_user(user_id)
 
         return result
+
+    async def change_user_role(self, user_id: str, new_role: UserRoleEnum) -> UserResponseModel:
+        """Сменить роль пользователя (только ADMIN).
+
+        Args:
+            user_id: MongoDB ObjectId пользователя.
+            new_role: Новая роль (user, organizer, admin).
+
+        Returns:
+            UserResponseModel: Обновлённые данные пользователя.
+        """
+
+        user = await self.user_dao.get_user_by_id(user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='User not found'
+            )
+
+        updated_user = await self.user_dao.update_user_role(user_id, new_role)
+
+        return UserResponseModel.model_validate(updated_user, from_attributes=True)
+
