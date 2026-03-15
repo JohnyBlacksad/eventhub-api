@@ -11,6 +11,9 @@ common:
       chunks_directory: /loki/chunks
       rules_directory: /loki/rules
   replication_factor: 1
+  ring:
+    kvstore:
+      store: memberlist
 
 schema_config:
   configs:
@@ -37,3 +40,7 @@ chunk_store_config:
 table_manager:
   retention_deletes_enabled: true
   retention_period: 168h
+
+memberlist:
+  join_members:
+    - loki:7946
