@@ -81,8 +81,16 @@ class EventService:
             EventResponseModel: Данные события.
 
         Raises:
+            HTTPException: 400 если ID невалиден.
             HTTPException: 404 если событие не найдено.
         """
+        # Валидация ObjectId
+        if not ObjectId.is_valid(event_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Invalid event ID format'
+            )
+
         raw_event = await self.event_dao.get_event(event_id)
 
         if not raw_event:
@@ -251,10 +259,18 @@ class EventService:
             dict: Статус регистрации.
 
         Raises:
+            HTTPException: 400 если ID невалиден.
             HTTPException: 404 если событие не найдено.
             HTTPException: 400 если пользователь уже зарегистрирован.
             HTTPException: 400 если событие заполнено.
         """
+        # Валидация ObjectId
+        if not ObjectId.is_valid(event_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Invalid event ID format'
+            )
+
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
@@ -305,9 +321,17 @@ class EventService:
             dict: Статус отмены регистрации.
 
         Raises:
+            HTTPException: 400 если ID невалиден.
             HTTPException: 404 если событие не найдено.
             HTTPException: 404 если регистрация не найдена.
         """
+        # Валидация ObjectId
+        if not ObjectId.is_valid(event_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Invalid event ID format'
+            )
+
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
@@ -343,8 +367,16 @@ class EventService:
             list[dict]: Список регистраций участников.
 
         Raises:
+            HTTPException: 400 если ID невалиден.
             HTTPException: 404 если событие не найдено.
         """
+        # Валидация ObjectId
+        if not ObjectId.is_valid(event_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Invalid event ID format'
+            )
+
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
@@ -358,6 +390,15 @@ class EventService:
             skip=skip,
             limit=limit
         )
+
+        # Конвертируем ObjectId в строку для сериализации
+        for p in participants:
+            if '_id' in p:
+                p['_id'] = str(p['_id'])
+            if 'event_id' in p:
+                p['event_id'] = str(p['event_id'])
+            if 'user_id' in p:
+                p['user_id'] = str(p['user_id'])
 
         return participants
 
@@ -374,6 +415,15 @@ class EventService:
             list[dict]: Список регистраций пользователя.
         """
         registrations = await self.registration_dao.get_user_registrations(user_id)
+
+        # Конвертируем ObjectId в строку для сериализации
+        for r in registrations:
+            if '_id' in r:
+                r['_id'] = str(r['_id'])
+            if 'event_id' in r:
+                r['event_id'] = str(r['event_id'])
+            if 'user_id' in r:
+                r['user_id'] = str(r['user_id'])
 
         return registrations
 

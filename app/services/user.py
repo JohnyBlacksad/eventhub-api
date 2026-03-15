@@ -72,6 +72,8 @@ class UserService:
         user_dict = user_data.model_dump(exclude={'password'})
         user_dict['hashed_password'] = hashed_password
         user_dict['created_at'] = datetime.now(timezone.utc)
+        # Роль устанавливается в 'user' по умолчанию (безопасность!)
+        user_dict['role'] = UserRoleEnum.USER.value
 
         user_id = await self.user_dao.create_user(user_dict)
         new_user = await self.user_dao.get_user_by_id(user_id)

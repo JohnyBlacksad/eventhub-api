@@ -45,9 +45,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title='EventHub API',
     version='0.1.0',
-    lifespan=lifespan)
+    lifespan=lifespan)  # redirect_slashes=True по умолчанию
 
-app.add_middleware(LoggingMiddleware)
+
 
 @app.get('/health', tags=['System'])
 async def health_check():
@@ -73,5 +73,5 @@ async def health_check():
             detail=f'Database is down: {e}'
         )
 
-
+app.add_middleware(LoggingMiddleware)
 app.include_router(main_router, prefix='/api/v1')

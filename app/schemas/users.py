@@ -49,18 +49,21 @@ class UserBaseModel(BaseModel):
         max_length=15,
         alias='phoneNumber'
     )
-    role: Optional[UserRoleEnum] = UserRoleEnum.USER
+    role: Optional[UserRoleEnum] = None
     is_banned: Optional[bool] = Field(default=False, alias='isBanned')
 
 
-class UserRegisterModel(UserBaseModel):
+class UserRegisterModel(BaseModel):
     """Схема для регистрации пользователя.
 
     Все поля обязательны. Email должен быть уникальным.
+    Роль устанавливается автоматически (user).
     """
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
     email: EmailStr                                                 # type: ignore
     first_name: str = Field(..., min_length=2, alias='firstName')   # type: ignore
     last_name: str = Field(..., min_length=2, alias='lastName')     # type: ignore
+    phone_number: str = Field(..., min_length=7, max_length=15, alias='phoneNumber')
     password: SecretStr = Field(..., min_length=8)
 
 
@@ -98,6 +101,7 @@ class UserUpdateModel(BaseModel):
     """Схема для обновления данных пользователя.
 
     Все поля опциональны. Обновляются только указанные поля.
+    Роль нельзя изменить через этот endpoint (только через admin).
     """
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
     email: Optional[EmailStr] = Field(default=None)
@@ -105,6 +109,7 @@ class UserUpdateModel(BaseModel):
     last_name: Optional[str] = Field(default=None, min_length=2, alias='lastName')
     phone_number: Optional[str] = Field(default=None, min_length=7, max_length=15, alias='phoneNumber')
     password: Optional[SecretStr] = Field(None, min_length=8)
+    # role намеренно исключён — меняется только через admin endpoint
 
 class GetUsersResponseModel(BaseModel):
     users: list[UserResponseModel]
