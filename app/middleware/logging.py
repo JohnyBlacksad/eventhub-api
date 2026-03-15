@@ -52,6 +52,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             'user_agent': request.headers.get('user-agent', None),
         }
 
-        logger.info(json.dumps(log_entry))
+        logger.info(f"{request.method} {request.url.path}", extra={"extra_data": log_entry})
 
         return response
