@@ -36,4 +36,14 @@ Thumbs.db
 reports/
 .allure/
 
+# Allure
+allure-report/
+allure-history.jsonl
+tests/reports/allure-results/
+tests/reports/coverage-html/
+
+# Node.js
+node_modules/
+package-lock.json
+
 summarys/

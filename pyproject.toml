@@ -46,8 +46,15 @@ asyncio_default_fixture_loop_scope = "function"
 
 markers = [
     "UNITS: Unit tests",
+    "INTEGRATION: Integration tests",
+    "LOAD: Load tests",
     "DAO: Data Access Object tests",
+    "SERVICES: Service layer tests",
+    "API: API endpoint tests",
     "USERS: User related tests",
+    "EVENTS: Event related tests",
+    "AUTH: Authentication tests",
+    "ACTIVATION_CODE: Activation code tests",
     "CREATE_USER: Testing user creation logic",
     "GET_USER: Testing get user logic",
     "UPDATE_USER: Testing user update logic",
@@ -55,8 +62,7 @@ markers = [
     "UPDATE_ROLE: Testing user role update logic",
     "BAN_USER: Testing user ban logic",
     "GET_USERS: Testing user list and filtering logic",
-    "SETUP_INDEXES: Testing database index setup",
-    "EVENTS: Event related tests"
+    "SETUP_INDEXES: Testing database index setup"
 ]
 
 addopts = [
@@ -64,6 +70,7 @@ addopts = [
     "--cov=app",
     "--cov-report=term-missing",
     "--cov-report=xml:./tests/reports/allure-results/coverage.xml",
+    "--cov-report=html:./tests/reports/coverage-html",
     "--alluredir=./tests/reports/allure-results",
     "--verbose"
 ]

@@ -38,3 +38,49 @@ restart: down up
 # Restart конкретного сервиса (пример: make restart-service SERVICE=api)
 restart-service:
 	docker compose -f docker-compose.yml -f docker-compose.logging.yml restart $(SERVICE)
+
+
+# Запустить все тесты
+test:
+	poetry run pytest
+
+# Запустить только unit тесты
+test-unit:
+	poetry run pytest -m UNITS -v
+
+# Запустить только integration тесты
+test-integration:
+	poetry run pytest -m INTEGRATION -v
+
+# Запустить тесты с Allure отчётом
+test-allure:
+	@echo "Running tests with coverage..."
+	poetry run pytest --cov=app \
+		--cov-report=xml:./tests/reports/allure-results/coverage.xml \
+		--cov-report=html:./tests/reports/coverage-html \
+		--alluredir=./tests/reports/allure-results
+
+	@echo "Generating Allure report..."
+	allure generate --output ./allure-report ./tests/reports/allure-results
+
+	@echo "Opening report..."
+	allure open ./allure-report
+
+# Сгенерировать отчёт из существующих результатов
+allure-report:
+	allure generate ./tests/reports/allure-results --clean -o ./allure-report
+	allure open ./allure-report
+
+# Очистить Allure отчёты
+allure-clean:
+	rm -rf ./allure-report ./allure-history.jsonl ./tests/reports/allure-results ./tests/reports/coverage-html
+
+
+# Проверка Quality Gate (локально)
+quality-gate:
+	@echo "Running Quality Gate check..."
+	poetry run python scripts/quality_gate.py ./tests/reports/allure-results/coverage.xml
+
+# Полная проверка для CI/CD
+ci-check: test-allure quality-gate
+	@echo "All checks passed!"
