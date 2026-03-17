@@ -1,5 +1,5 @@
 name: "EventHub API Dashboard"
-output: ".tests/report/allure-report"
+output: "./allure-report"
 
 qualityGate:
   rules:

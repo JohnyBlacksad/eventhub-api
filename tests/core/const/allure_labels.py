@@ -1,0 +1,121 @@
+import allure
+from tests.core.const.base_enum_marker import BaseMarkerEnum
+
+class AllureLabelApplier:
+
+
+    SEVERITY_PRIORITY = {
+        'BLOCKER': 4,
+        'CRITICAL': 3,
+        'NORMAL': 2,
+        'MINOR': 1,
+        'TRIVIAL': 0,
+    }
+
+    def __init__(self, default_owner: str = 'ADMIN'):
+        self.default_owner = default_owner
+        self.enums = BaseMarkerEnum.get_all()
+
+    def __get_contributions(self, mark_name):
+        """
+        Собирает вклад от всех енумов для данного маркера.
+        Возвращает словарь с возможными ключам:
+        epic, layer, feature, story, severities (список).
+        """
+
+        contributions = {}
+
+        for enum_cls in self.enums:
+            try:
+                member = enum_cls[mark_name]
+            except KeyError:
+                continue
+
+            if hasattr(member, 'epic'):
+                contributions['epic'] = member.epic
+            if hasattr(member, 'layer'):
+                contributions['layer'] = member.layer
+            if hasattr(member, 'feature') and 'feature' not in contributions:
+                contributions['feature'] = member.feature
+            if hasattr(member, 'story') and 'story' not in contributions:
+                contributions['story'] = member.story
+            if hasattr(member, 'severity'):
+                contributions.setdefault('severities', []).append(member.severity)
+
+        return contributions
+
+    def __get_owner_from_marker(self, item):
+        owner_marker = item.get_closest_marker('owner')
+        if owner_marker and owner_marker.args:
+            return owner_marker.args[0]
+        return self.default_owner
+
+    def _get_max_severity(self, severities):
+        if not severities:
+            return "normal"
+        max_priority = -1
+        selected = "normal"
+        for sev in severities:
+            priority = self.SEVERITY_PRIORITY.get(sev, -1)
+            if priority > max_priority:
+                max_priority = priority
+                selected = sev
+        return selected
+
+    def _build_description(self, epic, feature, story, layer):
+        parts = []
+        if epic:
+            parts.append(f"Epic: {epic}")
+        if feature:
+            parts.append(f"Feature: {feature}")
+        if story:
+            parts.append(f"Story: {story}")
+        if layer:
+            parts.append(f"Layer: {layer}")
+        if parts:
+            return " | ".join(parts)
+        return "No description available"
+
+    def apply(self, item):
+        test_marks = {marker.name for marker in item.iter_markers()}
+
+        all_contributions = {
+            'epic': None,
+            'layer': None,
+            'feature': None,
+            'story': None,
+            'severities': []
+        }
+
+        for mark_name in test_marks:
+            contrib = self.__get_contributions(mark_name)
+            if contrib.get('epic') and not all_contributions['epic']:
+                all_contributions['epic'] = contrib['epic']
+            if contrib.get('layer') and not all_contributions['layer']:
+                all_contributions['layer'] = contrib['layer']
+            if contrib.get('feature') and not all_contributions['feature']:
+                all_contributions['feature'] = contrib['feature']
+            if contrib.get('story') and not all_contributions['story']:
+                all_contributions['story'] = contrib['story']
+            if contrib.get('severities'):
+                all_contributions['severities'].extend(contrib['severities'])
+
+        epic = all_contributions['epic'] or "Unknown Tests"
+        layer = all_contributions['layer'] or "unknown"
+        feature = all_contributions['feature'] or "General"
+        story = all_contributions['story'] or "General Operations"
+        severity = self._get_max_severity(all_contributions['severities'])
+        description = self._build_description(epic, feature, story, layer)
+        owner = self.__get_owner_from_marker(item)
+
+        allure.dynamic.epic(epic)
+        allure.dynamic.label("test_layer", layer)
+        allure.dynamic.feature(feature)
+        allure.dynamic.story(story)
+        allure.dynamic.severity(severity)
+        allure.dynamic.description(description)
+        allure.dynamic.label("owner", owner)
+
+        for mark_name in test_marks:
+            allure.dynamic.label("test_marker", mark_name)
+            allure.dynamic.tag(mark_name)

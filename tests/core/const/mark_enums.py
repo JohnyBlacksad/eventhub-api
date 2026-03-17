@@ -1,29 +1,59 @@
-from enum import StrEnum
+from tests.core.const.base_enum_marker import BaseMarkerEnum
+from enum import Enum
 import pytest
 
-def tag(value: str):
-    return getattr(pytest.mark, value)
+def tag(value):
+    if isinstance(value, Enum):
+        marker_name = value.name
+    else:
+        marker_name = str(value)
+    return getattr(pytest.mark, marker_name)
 
-class MarkTests(StrEnum):
-    UNITS = 'UNITS'
+class MarkTests(BaseMarkerEnum):
+    UNITS = ('Unit Tests', 'unit')
+    INTEGRATION = ('Integration Tests', 'integration')
+    LOAD = ('Load Tests', 'load')
 
-class ModuleMarks(StrEnum):
-    DAO = "DAO"
+    def __init__(self, epic, layer):
+        self.epic = epic
+        self.layer = layer
 
-class ServicesMark(StrEnum):
-    EVENTS = 'EVENTS'
-    USERS = 'USERS'
+class ModuleMarks(BaseMarkerEnum):
+    DAO = 'Data Access Layer'
+    SERVICES = 'Services Business Logic Layer'
+    API = 'API Endpoints Layer'
+
+    def __init__(self, feature):
+        self.feature = feature
+
+class ServicesMark(BaseMarkerEnum):
+    EVENTS = 'Events Service'
+    USERS = 'Users Service'
+    AUTH = 'Auth Service'
+    ACTIVATION_CODE = 'Activation Code Service'
+    EVENT_REGISTRATION = 'Event Registration Service'
+
+    def __init__(self, feature):
+        self.feature = feature
 
 
-class FeaturesUserMark(StrEnum):
-    CREATE_USER = 'CREATE_USER'
-    GET_USER = 'GET_USER'
-    UPDATE_USER = 'UPDATE_USER'
-    DELETE_USER = 'DELETE_USER'
-    UPDATE_ROLE = 'UPDATE_ROLE'
-    BAN_USER = 'BAN_USER'
-    GET_USERS = 'GET_USERS'
+class FeaturesUserMark(BaseMarkerEnum):
+    CREATE_USER = ('Create User', "BLOCKER")
+    GET_USER = ('Get User', 'NORMAL')
+    UPDATE_USER = ('Update User', 'NORMAL')
+    DELETE_USER = ('Delete User', 'BLOCKER')
+    UPDATE_ROLE = ('Update User Role', 'NORMAL')
+    BAN_USER = ('Ban user', "CRITICAL")
+    GET_USERS = ('Get User List', "NORMAL")
 
-class DataBaseFunctionMark(StrEnum):
-    SETUP_INDEXES = 'SETUP_INDEXES'
+    def __init__(self, story, severity):
+        self.story = story
+        self.severity = severity
+
+class DataBaseFunctionMark(BaseMarkerEnum):
+    SETUP_INDEXES = ('Database Indexes', "CRITICAL")
+
+    def __init__(self, story, severity):
+        self.story = story
+        self.severity = severity
 
