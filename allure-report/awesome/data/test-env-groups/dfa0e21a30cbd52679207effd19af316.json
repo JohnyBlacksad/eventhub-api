@@ -1,0 +1,1 @@
+{"id":"dfa0e21a30cbd52679207effd19af316","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_delete_user_returns_false_if_not_found","name":"Удаление несуществующего пользователя","status":"passed","testResultsByEnv":{"default":"a062aa694dafa1f6a2a38d2d6f451774"}}

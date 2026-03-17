@@ -1,0 +1,1 @@
+{"id":"7d38814ecd244e0500a532f4c8be629c","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_get_users_with_filter_role","name":"Фильтрация пользователей по роли","status":"passed","testResultsByEnv":{"default":"d02051852140e3bfd98084c7cd161104"}}

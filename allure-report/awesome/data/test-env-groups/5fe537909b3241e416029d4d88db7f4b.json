@@ -1,0 +1,1 @@
+{"id":"5fe537909b3241e416029d4d88db7f4b","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_create_user_with_duplicate_id_raises_error","name":"Ошибка при создании дубликата пользователя","status":"passed","testResultsByEnv":{"default":"0bbbd6bdb107e3e1ba7eca0724a15629"}}

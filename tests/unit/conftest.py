@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from app.models.events import EventDAO
 from tests.mock.mongo_mock import get_mongo_mock
 from app.models.user import UserDAO
 from mongomock_motor import AsyncMongoMockCollection
 from tests.core.user_data_factory.fake_user_data import faker
-
+from tests.core.event_data_factory.fake_event_data import event_faker
 
 @pytest.fixture
 def mongo_mock():
@@ -82,3 +83,18 @@ async def users_with_different_dates(mock_user_dao: UserDAO) -> dict[str, list |
         'late': late_users,
         'now': now
     }
+
+@pytest.fixture
+def event_collection(mongo_mock):
+    return mongo_mock.get_events_collection()
+
+@pytest.fixture
+def event_dao(event_collection: AsyncMongoMockCollection):
+    return EventDAO(event_collection)
+
+@pytest.fixture
+async def created_event(event_dao: EventDAO):
+    event_data = event_faker.get_event_data_dict()
+    event_id = await event_dao.create_event(event_data)
+    event = await event_dao.get_event(event_id)
+    return event

@@ -21,7 +21,7 @@ email-validator = "^2.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
-pytest-asyncio = "^0.23.3"
+pytest-asyncio = "^1.3.0"
 pytest-cov = "^4.1.0"
 pytest-mock = "^3.12.0"
 httpx = "^0.26.0"
@@ -30,7 +30,40 @@ allure-pytest = "^2.13.2"
 ruff = "^0.1.14"
 faker = "^40.11.0"
 mongomock-motor = "^0.0.36"
+pytest-subtests = "^0.15.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+
+markers = [
+    "UNITS: Unit tests",
+    "DAO: Data Access Object tests",
+    "USERS: User related tests",
+    "CREATE_USER: Testing user creation logic",
+    "GET_USER: Testing get user logic",
+    "UPDATE_USER: Testing user update logic",
+    "DELETE_USER: Testing user deletion logic",
+    "UPDATE_ROLE: Testing user role update logic",
+    "BAN_USER: Testing user ban logic",
+    "GET_USERS: Testing user list and filtering logic",
+    "SETUP_INDEXES: Testing database index setup",
+    "EVENTS: Event related tests"
+]
+
+addopts = [
+    "-s",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-report=xml:./tests/reports/allure-results/coverage.xml",
+    "--alluredir=./tests/reports/allure-results",
+    "--verbose"
+]

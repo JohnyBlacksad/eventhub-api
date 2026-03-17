@@ -1,0 +1,1 @@
+{"id":"cb1a5388d628f7a34f325f580a571f0e","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_update_user_role_raises_for_non_existing_user","name":"Изменение роли у несуществующего пользователя","status":"passed","testResultsByEnv":{"default":"beae68a10488939314c78cef834821f1"}}

@@ -1,0 +1,1 @@
+{"id":"3d85c7dad5cdd95f88e3ebc1fb606856","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_get_user_by_email_returns_none_if_not_found","name":"Поиск несуществующего пользователя по Email возвращает None","status":"passed","testResultsByEnv":{"default":"0b5ee9e50b7024161c7241a1125c5ef0"}}

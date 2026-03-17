@@ -1,0 +1,1 @@
+{"id":"64e9790ef6264351efecae3f302d82da","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_set_ban_user_updates_is_banned","name":"Изменение статуса бана у существующего пользователя","status":"passed","testResultsByEnv":{"default":"874e303a2e958c9ead02e263dc5a9cc0"}}

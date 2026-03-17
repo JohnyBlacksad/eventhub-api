@@ -1,0 +1,1 @@
+{"id":"1f6330b7add5a5634ef4896a79cf909f","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_get_users_with_filter_date_range","name":"Фильтрация пользователей в диапазоне указанных дат","status":"passed","testResultsByEnv":{"default":"c1c3605972fc1b96d91978f363d1521e"}}

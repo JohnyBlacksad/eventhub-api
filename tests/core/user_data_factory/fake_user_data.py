@@ -4,8 +4,6 @@ from app.schemas.users import UserRegisterModel, UserResponseModel
 from app.schemas.enums.user_enums.users_status import UserRoleEnum
 import random
 
-faker = Faker('ru_RU')
-
 class FakeUserData:
     def __init__(self, faker: Faker):
         self.faker = faker

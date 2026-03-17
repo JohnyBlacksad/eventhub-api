@@ -1,0 +1,1 @@
+{"id":"686220344476195293c75b951d28fe12","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_get_user_by_id_returns_user","name":"Поиск пользователя по ID","status":"passed","testResultsByEnv":{"default":"bc0387cd5ed51a55ae20f0ab502b5ec7"}}
