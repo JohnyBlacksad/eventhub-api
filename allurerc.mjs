@@ -49,9 +49,9 @@ export default defineConfig({
     },
 
     defaultLabels: {
-        severity: "normal",
-        owner: "artem",
-        layer: "backend"
+        severity: "NORMAL",
+        owner: "ADMIN",
+        layer: "BACKEND"
     },
 
     plugins: {
@@ -139,7 +139,7 @@ export default defineConfig({
     variables: {
         "Environment": "WSL2 / Ubuntu",
         "Python": "3.12",
-        "Layer": "Backend",
+        "Layer": "BACKEND",
         "Framework": "pytest + mongomock-motor",
         "Total Coverage": `${coverage.total_coverage}%`,
         "Branch Coverage": `${coverage.branch_coverage}%`

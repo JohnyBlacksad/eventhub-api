@@ -68,7 +68,7 @@ test-allure:
 
 # Сгенерировать отчёт из существующих результатов
 allure-report:
-	allure generate ./tests/reports/allure-results --clean -o ./allure-report
+	allure generate --output ./allure-report ./tests/reports/allure-results
 	allure open ./allure-report
 
 # Очистить Allure отчёты

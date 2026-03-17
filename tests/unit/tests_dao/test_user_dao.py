@@ -17,9 +17,6 @@ from tests.core.const.mark_enums import (
     tag
 )
 
-@allure.epic("Core Modules")
-@allure.feature("User Management")
-@allure.story("User DAO Operations")
 @tag(MarkTests.UNITS)
 @tag(ModuleMarks.DAO)
 @tag(ServicesMark.USERS)

@@ -7,6 +7,11 @@ applier = AllureLabelApplier(default_owner="artem")
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):
+    if hasattr(item, 'cls') and item.cls:
+        for marker in item.cls.pytestmark:
+            if not item.get_closest_marker(marker.name):
+                item.add_marker(marker)
+
     applier.apply(item)
 
 

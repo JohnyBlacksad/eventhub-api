@@ -89,6 +89,7 @@ class AllureLabelApplier:
 
         for mark_name in test_marks:
             contrib = self.__get_contributions(mark_name)
+
             if contrib.get('epic') and not all_contributions['epic']:
                 all_contributions['epic'] = contrib['epic']
             if contrib.get('layer') and not all_contributions['layer']:
