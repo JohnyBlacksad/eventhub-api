@@ -1,1 +1,0 @@
-{"id":"066837b1a88ab3e5809b453338ed4e57","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_create_user_returns_id","name":"Успешное создание пользователя и проверка контракта","status":"passed","testResultsByEnv":{"default":"065e69543e4d2ee7bb49c278017a9634"}}

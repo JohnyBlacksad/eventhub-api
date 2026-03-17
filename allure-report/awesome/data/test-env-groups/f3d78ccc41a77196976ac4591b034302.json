@@ -1,1 +1,0 @@
-{"id":"f3d78ccc41a77196976ac4591b034302","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_setup_indexes_creates_unique_email_index","name":"Инициализация уникальных индексов для Email","status":"passed","testResultsByEnv":{"default":"f14cc5b006a387cb2c97e3aa7b4bdf9c"}}

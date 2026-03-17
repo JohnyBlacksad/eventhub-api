@@ -1,1 +1,0 @@
-{"id":"c5aad0351e52c9da68845877346676c5","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_get_users_specific_quantity","name":"Получение списка всех пользователей доступных в БД","status":"passed","testResultsByEnv":{"default":"a81a5517703adce5dd0f42c3600b70b4"}}

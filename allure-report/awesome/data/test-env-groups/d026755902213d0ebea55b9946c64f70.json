@@ -1,1 +1,0 @@
-{"id":"d026755902213d0ebea55b9946c64f70","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_get_user_by_email_returns_user","name":"Поиск существующего пользователя по Email возвращает данные пользователя","status":"passed","testResultsByEnv":{"default":"e5cbbba0ef2c4e3325f681c725ab0842"}}

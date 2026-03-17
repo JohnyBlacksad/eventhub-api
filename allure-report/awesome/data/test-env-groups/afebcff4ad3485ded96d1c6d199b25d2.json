@@ -1,1 +1,0 @@
-{"id":"afebcff4ad3485ded96d1c6d199b25d2","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_update_user_returns_none_if_not_found","name":"Обновление данных несуществующего пользователя","status":"passed","testResultsByEnv":{"default":"75bc2a0ff2054cf788a739c568b58c98"}}

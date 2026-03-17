@@ -1,1 +1,0 @@
-{"id":"17c667bb02e8a195da21ae856373ba41","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_get_users_with_filter_created_at_from","name":"Фильтрация пользователей ОТ указанной даты","status":"passed","testResultsByEnv":{"default":"055162e4ad40b13a7892b82680c8058e"}}

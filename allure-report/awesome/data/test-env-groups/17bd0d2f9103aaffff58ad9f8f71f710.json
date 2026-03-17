@@ -1,1 +1,0 @@
-{"id":"17bd0d2f9103aaffff58ad9f8f71f710","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_get_user_by_id_returns_none_if_not_found","name":"Поиск несуществующего пользователя по ID возвращает None","status":"passed","testResultsByEnv":{"default":"75ab7759928888dd49d37b2caf8b77b7"}}

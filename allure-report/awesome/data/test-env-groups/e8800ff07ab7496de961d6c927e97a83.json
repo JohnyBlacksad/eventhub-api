@@ -1,1 +1,0 @@
-{"id":"e8800ff07ab7496de961d6c927e97a83","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_get_users_returns_list","name":"Получение списка пользователей без фильтрации","status":"passed","testResultsByEnv":{"default":"4f657aff6bd2e1de4a4a0d9604e037b0"}}

@@ -1,1 +1,0 @@
-{"id":"94a33c5816861e1029c0239d9ce07205","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_update_user_role_updates_role","name":"Изменение роли у существующего пользователя","status":"passed","testResultsByEnv":{"default":"017190788e80254eed066a3c62fba087"}}

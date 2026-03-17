@@ -1,1 +1,0 @@
-{"id":"fe42a6bf7dab4ecbccfedffeeecb63c8","fullName":"tests.unit.tests_dao.test_user_dao.TestUserDAO#test_create_user_with_duplicate_email_raises_error_after_setup_indexes","name":"Попытка создания дубликата пользователя по email после создания индекса","status":"passed","testResultsByEnv":{"default":"c9644c8edb4a4fb2ca52f3ebcb968622"}}
