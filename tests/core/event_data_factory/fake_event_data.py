@@ -2,6 +2,8 @@ from typing import Optional
 
 from faker import Faker
 from datetime import datetime, timezone, timedelta
+
+from mongomock import ObjectId
 from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 import random
 
@@ -32,6 +34,10 @@ class FakeEventData:
 
         return status
 
+    def generate_random_id(self):
+        return str(ObjectId())
+
+
 
     def get_event_data_dict(self, **kwargs) -> dict:
         event_data_dict = {
@@ -40,7 +46,9 @@ class FakeEventData:
             'location': self.get_locations_dict(),
             'startDate': datetime.now(timezone.utc) + timedelta(days=15),
             'endDate': datetime.now(timezone.utc) + timedelta(days=30),
-            'status': self.get_random_status()
+            'status': self.get_random_status(),
+            'created_by': self.generate_random_id(),
+            'created_at': datetime.now(timezone.utc)
         }
 
         event_data_dict.update(**kwargs)

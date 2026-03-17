@@ -62,7 +62,15 @@ markers = [
     "UPDATE_ROLE: Testing user role update logic",
     "BAN_USER: Testing user ban logic",
     "GET_USERS: Testing user list and filtering logic",
-    "SETUP_INDEXES: Testing database index setup"
+    "SETUP_INDEXES: Testing database index setup",
+    "CREATE_EVENT: Testing event creation logic",
+    "GET_EVENT: Testing get event logic",
+    "UPDATE_EVENT: Testing update event logic",
+    "DELETE_EVENT: Tesing delete event logic",
+    "HAS_ACTIVE_EVENT: Testing active status event logic",
+    "DELETE_USER_EVENTS: Testing delete all user events",
+    "GET_EVENTS: Tesing event list and filtering logic",
+
 ]
 
 addopts = [

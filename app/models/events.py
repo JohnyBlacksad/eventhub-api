@@ -8,6 +8,8 @@ from app.database import db_client
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ReturnDocument, ASCENDING, TEXT, DESCENDING
 
+from app.schemas.enums.event_enums.event_enums import EventStatusEnum
+
 
 class EventDAO:
     """Data Access Object для коллекции событий.
@@ -176,7 +178,7 @@ class EventDAO:
         """
         query = {
             'created_by': ObjectId(user_id),
-            'status': {'$in': ['published']}
+            'status': {'$in': [EventStatusEnum.PUBLISHED, EventStatusEnum.PUBLISHED.value, 'published']}
         }
         result = await self.collections.find_one(query)
         return result is not None

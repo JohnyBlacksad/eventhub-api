@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
+
 import pytest
 from app.models.events import EventDAO
+from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 from tests.mock.mongo_mock import get_mongo_mock
 from app.models.user import UserDAO
 from mongomock_motor import AsyncMongoMockCollection
@@ -98,3 +100,25 @@ async def created_event(event_dao: EventDAO):
     event_id = await event_dao.create_event(event_data)
     event = await event_dao.get_event(event_id)
     return event
+
+@pytest.fixture
+async def event_factory_for_user(event_dao: EventDAO, created_user):
+    """Фабрика для создания событий у существующего пользователя."""
+
+    async def aplicate_status_event(status: EventStatusEnum, count: int = 1):
+        user_id = created_user['_id']
+        event_list = []
+        for _ in range(count):
+            event_data = event_faker.get_event_data_dict(
+                status=status,
+                created_by=user_id)
+            event_id = await event_dao.create_event(event_data)
+            event = await event_dao.get_event(event_id)
+            event_list.append(event)
+
+        if len(event_list) > 1:
+            return user_id, event_list
+
+        return user_id, event_list[0]
+
+    return aplicate_status_event

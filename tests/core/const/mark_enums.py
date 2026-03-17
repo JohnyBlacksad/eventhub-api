@@ -57,3 +57,16 @@ class DataBaseFunctionMark(BaseMarkerEnum):
         self.story = story
         self.severity = severity
 
+class FeaturesEventMark(BaseMarkerEnum):
+    CREATE_EVENT = ('Create Event', 'CRITICAL')
+    GET_EVENT = ('Get Event', 'NORMAL')
+    UPDATE_EVENT = ('Update Event', "NORMAL")
+    DELETE_EVENT = ('Delete Event', "CRITICAL")
+    HAS_ACTIVE_EVENT = ('Has Active Event', 'MINOR')
+    DELETE_USER_EVENTS = ('Delete User Events', 'CRITICAL')
+    GET_EVENTS = ('Get Events List', 'NORMAL')
+
+    def __init__(self, story, severity):
+        self.story = story
+        self.severity = severity
+
