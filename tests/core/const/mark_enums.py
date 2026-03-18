@@ -88,3 +88,16 @@ class FeaturesRegistrationMark(BaseMarkerEnum):
         self.story = story
         self.severity = severity
 
+
+class FeaturesActivationCodeMark(BaseMarkerEnum):
+    CREATE_CODE = ('Create Code', 'CRITICAL')
+    GET_CODE = ('Get Code', 'NORMAL')
+    GET_CODES = ('Get Codes List', 'NORMAL')
+    USE_CODE = ('Use Code', 'CRITICAL')
+    DELETE_CODE = ('Delete Code', 'CRITICAL')
+    FILTER_CODES = ('Filter Codes', 'NORMAL')
+
+    def __init__(self, story, severity):
+        self.story = story
+        self.severity = severity
+

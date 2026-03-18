@@ -1,15 +1,19 @@
+import pytest
+from uuid import uuid4
+from bson import ObjectId
 from datetime import datetime, timedelta, timezone
 
-
-import pytest
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
+from app.models.activation_code import ActivationCodeDAO
 from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 from tests.mock.mongo_mock import get_mongo_mock
 from app.models.user import UserDAO
 from mongomock_motor import AsyncMongoMockCollection
 from tests.core.user_data_factory.fake_user_data import faker
 from tests.core.event_data_factory.fake_event_data import event_faker
+from app.schemas.enums.user_enums.users_status import UserRoleEnum
+
 
 @pytest.fixture
 def mongo_mock():
@@ -24,6 +28,46 @@ def user_collections(mongo_mock):
 @pytest.fixture
 def mock_user_dao(user_collections: AsyncMongoMockCollection):
     return UserDAO(user_collections)
+
+@pytest.fixture
+def activation_code_collection(mongo_mock):
+    return mongo_mock.get_activation_codes_collection()
+
+
+@pytest.fixture
+def activation_code_dao(activation_code_collection: AsyncMongoMockCollection):
+    return ActivationCodeDAO(activation_code_collection)
+
+
+@pytest.fixture
+async def setup_indexes_for_activation_code(activation_code_collection: AsyncMongoMockCollection):
+    await ActivationCodeDAO.setup_indexes(activation_code_collection)
+    return activation_code_collection
+
+@pytest.fixture
+def registration_collection(mongo_mock):
+    return mongo_mock.get_registrations_collection()
+
+
+@pytest.fixture
+def registration_dao(registration_collection: AsyncMongoMockCollection):
+    return RegistrationDAO(registration_collection)
+
+
+@pytest.fixture
+async def setup_indexes_for_registration(registration_collection: AsyncMongoMockCollection):
+    await RegistrationDAO.setup_indexes(registration_collection)
+    return registration_collection
+
+
+@pytest.fixture
+def event_collection(mongo_mock):
+    return mongo_mock.get_events_collection()
+
+@pytest.fixture
+def event_dao(event_collection: AsyncMongoMockCollection):
+    return EventDAO(event_collection)
+
 
 @pytest.fixture
 async def created_user(mock_user_dao: UserDAO):
@@ -87,13 +131,6 @@ async def users_with_different_dates(mock_user_dao: UserDAO) -> dict[str, list |
         'now': now
     }
 
-@pytest.fixture
-def event_collection(mongo_mock):
-    return mongo_mock.get_events_collection()
-
-@pytest.fixture
-def event_dao(event_collection: AsyncMongoMockCollection):
-    return EventDAO(event_collection)
 
 @pytest.fixture
 async def created_event(event_dao: EventDAO):
@@ -134,23 +171,6 @@ async def event_factory_for_user(event_dao: EventDAO, created_user):
     return aplicate_status_event
 
 
-@pytest.fixture
-def registration_collection(mongo_mock):
-    """Получить коллекцию registrations из mock БД."""
-    return mongo_mock.get_registrations_collection()
-
-
-@pytest.fixture
-def registration_dao(registration_collection: AsyncMongoMockCollection):
-    """Создать RegistrationDAO с mock коллекцией."""
-    return RegistrationDAO(registration_collection)
-
-
-@pytest.fixture
-async def setup_indexes_for_registration(registration_collection: AsyncMongoMockCollection):
-    """Инициализировать индексы для коллекции регистраций."""
-    await RegistrationDAO.setup_indexes(registration_collection)
-    return registration_collection
 
 
 @pytest.fixture
@@ -225,5 +245,129 @@ async def event_registrations_factory(registration_dao: RegistrationDAO, user_fa
             registration = await registration_dao.get_existing_registration(event_id, user_id)
             registrations.append(registration)
         return registrations
+
+    return factory
+
+
+
+
+@pytest.fixture
+def code_factory_data():
+    """Фабрика данных для создания кода активации.
+
+    Returns:
+        dict: Данные для создания кода.
+    """
+    def factory(role=None, code=None) -> dict:
+        from app.schemas.enums.user_enums.users_status import UserRoleEnum
+        return {
+            'role': role or UserRoleEnum.ORGANIZER,
+            'code': code or 'test-code-default'
+        }
+    return factory
+
+
+@pytest.fixture
+async def created_activation_code(activation_code_dao: ActivationCodeDAO, code_factory_data):
+    """Создать код активации по умолчанию."""
+    code_data = code_factory_data()
+    code_id = await activation_code_dao.create_code(code_data)
+    code = await activation_code_dao.get_code(code_id)
+    return code
+
+
+@pytest.fixture
+async def activation_code_factory(activation_code_dao: ActivationCodeDAO):
+    """Фабрика для создания кодов активации.
+
+    Args:
+        role: Роль кода (по умолчанию ORGANIZER).
+        code: Строка кода (по умолчанию генерируется).
+        is_used: Флаг использования (по умолчанию False).
+        created_at: Время создания (по умолчанию сейчас).
+
+    Returns:
+        dict: Созданный код активации.
+    """
+
+
+    async def factory(
+        role: UserRoleEnum | None = None,
+        code: str | None = None,
+        is_used: bool = False,
+        created_at: datetime | None = None
+    ) -> dict:
+        code_data = {
+            'role': role or UserRoleEnum.ORGANIZER,
+            'code': code or str(uuid4()),
+            'created_at': created_at or datetime.now(timezone.utc)
+        }
+
+        code_id = await activation_code_dao.create_code(code_data)
+
+        # Если нужен использованный код - обновляем вручную
+        if is_used:
+            await activation_code_dao.collection.update_one(
+                {'_id': ObjectId(code_id)},
+                {'$set': {'is_used': True}}
+            )
+
+        created_code = await activation_code_dao.get_code(code_id)
+
+        assert created_code
+
+        return created_code
+
+    return factory
+
+
+@pytest.fixture
+async def activation_codes_factory(activation_code_dao: ActivationCodeDAO):
+    """Фабрика для создания множественных кодов активации.
+
+    Args:
+        count: Количество кодов (по умолчанию 1).
+        role: Роль кода (применяется ко всем).
+        is_used_list: Список флагов is_used для каждого кода.
+        created_at_list: Список времён создания для каждого кода.
+
+    Returns:
+        list[dict]: Список созданных кодов.
+    """
+
+    async def factory(
+        count: int = 1,
+        role: UserRoleEnum | None = None,
+        is_used_list: list[bool] | None = None,
+        created_at_list: list[datetime] | None = None
+    ) -> list[dict]:
+        codes = []
+
+        for i in range(count):
+            code_data = {
+                'role': role or UserRoleEnum.ORGANIZER,
+                'code': str(uuid4()),
+            }
+
+            code_id = await activation_code_dao.create_code(code_data)
+
+            # Обновляем created_at и is_used после создания
+            update_data = {}
+            if created_at_list and i < len(created_at_list):
+                update_data['created_at'] = created_at_list[i]
+
+            if is_used_list and i < len(is_used_list) and is_used_list[i]:
+                update_data['is_used'] = True
+
+            if update_data:
+                await activation_code_dao.collection.update_one(
+                    {'_id': ObjectId(code_id)},
+                    {'$set': update_data}
+                )
+
+            created_code = await activation_code_dao.get_code(code_id)
+            codes.append(created_code)
+
+        return codes
 
     return factory

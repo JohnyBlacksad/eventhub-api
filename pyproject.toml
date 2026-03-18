@@ -78,7 +78,13 @@ markers = [
     "GET_EXISTING_REGISTRATION: Testing get existing registartion in event logic",
     "DELETE_ALL_REGISTRATIONS_FOR_EVENT: Testing delete all registration in event logic",
     "SET_DELETION_TIME_FOR_EVENT: Tesing set deletion time for event logic",
-    "DELETE_REGISTRATION_BY_USER: Testing delete all registration user in event logic"
+    "DELETE_REGISTRATION_BY_USER: Testing delete all registration user in event logic",
+    "CREATE_CODE: Testsing create update role code logic",
+    "GET_CODE: Testing get activation code logic",
+    "GET_CODES: Testing get acivation codes list logic",
+    "USE_CODE: Teting use activation code logic",
+    "DELETE_CODE: Testing delete activation code logic",
+    "FILTER_CODES: Testing get filtered codes list logic"
 ]
 
 addopts = [
