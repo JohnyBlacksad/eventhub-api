@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from app.models.events import EventDAO
+from app.models.registration import RegistrationDAO
 from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 from tests.mock.mongo_mock import get_mongo_mock
 from app.models.user import UserDAO
@@ -131,3 +132,98 @@ async def event_factory_for_user(event_dao: EventDAO, created_user):
         return user_id, event_list[0], events_ids[0]
 
     return aplicate_status_event
+
+
+@pytest.fixture
+def registration_collection(mongo_mock):
+    """Получить коллекцию registrations из mock БД."""
+    return mongo_mock.get_registrations_collection()
+
+
+@pytest.fixture
+def registration_dao(registration_collection: AsyncMongoMockCollection):
+    """Создать RegistrationDAO с mock коллекцией."""
+    return RegistrationDAO(registration_collection)
+
+
+@pytest.fixture
+async def setup_indexes_for_registration(registration_collection: AsyncMongoMockCollection):
+    """Инициализировать индексы для коллекции регистраций."""
+    await RegistrationDAO.setup_indexes(registration_collection)
+    return registration_collection
+
+
+@pytest.fixture
+async def created_registration(registration_dao: RegistrationDAO, created_user: dict, created_event: dict):
+    """Создать регистрацию для пользователя на событие."""
+    user_id = created_user['_id']
+    event_id = created_event['_id']
+
+    await registration_dao.add_registration(str(event_id), str(user_id))
+
+    registration = await registration_dao.get_existing_registration(str(event_id), str(user_id))
+    return registration
+
+
+@pytest.fixture
+async def user_factory(mock_user_dao: UserDAO):
+    """Фабрика для создания пользователей.
+
+    Возвращает ID созданного пользователя.
+    """
+    async def factory() -> str:
+        user_data = faker.get_user_register_data_dict()
+        user_id = await mock_user_dao.create_user(user_data)
+        return str(user_id)
+
+    return factory
+
+
+@pytest.fixture
+async def registration_factory(registration_dao: RegistrationDAO, user_factory):
+    """Фабрика для создания регистраций.
+
+    Args:
+        event_id: ID события для регистрации.
+        user_id: ID пользователя (если None, создаётся новый через user_factory).
+
+    Returns:
+        dict: Созданная регистрация.
+    """
+    async def factory(event_id: str, user_id: str | None = None) -> dict:
+        if user_id is None:
+            user_id = await user_factory()
+
+        assert user_id
+
+        await registration_dao.add_registration(event_id, user_id)
+        registration = await registration_dao.get_existing_registration(event_id, user_id)
+
+        assert registration
+
+        return registration
+
+    return factory
+
+
+@pytest.fixture
+async def event_registrations_factory(registration_dao: RegistrationDAO, user_factory):
+    """Фабрика для создания множественных регистраций на одно событие.
+
+    Args:
+        event_id: ID события.
+        count: Количество регистраций (по умолчанию 1).
+
+    Returns:
+        list[dict]: Список регистраций.
+    """
+    async def factory(event_id: str, count: int = 1) -> list[dict]:
+        registrations = []
+        for _ in range(count):
+            user_id = await user_factory()
+            await registration_dao.add_registration(event_id, user_id)
+            registration = await registration_dao.get_existing_registration(event_id, user_id)
+            registrations.append(registration)
+        return registrations
+
+    return factory

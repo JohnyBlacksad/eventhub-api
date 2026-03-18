@@ -73,3 +73,18 @@ class FeaturesEventMark(BaseMarkerEnum):
         self.story = story
         self.severity = severity
 
+
+class FeaturesRegistrationMark(BaseMarkerEnum):
+    ADD_REGISTRATION = ('Add Registration', 'CRITICAL')
+    REMOVE_REGISTRATION = ('Remove Registration', 'CRITICAL')
+    GET_EVENT_REGISTRATIONS = ('Get Event Registrations', 'NORMAL')
+    GET_USER_REGISTRATIONS = ('Get User Registrations', 'NORMAL')
+    GET_EXISTING_REGISTRATION = ('Get Existing Registration', 'NORMAL')
+    DELETE_ALL_REGISTRATIONS_FOR_EVENT = ('Delete All Registrations For Event', 'CRITICAL')
+    SET_DELETION_TIME_FOR_EVENT = ('Set Deletion Time For Event', 'NORMAL')
+    DELETE_REGISTRATION_BY_USER = ('Delete Registration By User', 'CRITICAL')
+
+    def __init__(self, story, severity):
+        self.story = story
+        self.severity = severity
+

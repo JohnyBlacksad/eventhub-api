@@ -55,6 +55,7 @@ markers = [
     "EVENTS: Event related tests",
     "AUTH: Authentication tests",
     "ACTIVATION_CODE: Activation code tests",
+    "EVENT_REGISTRATION: Event registration tests",
     "CREATE_USER: Testing user creation logic",
     "GET_USER: Testing get user logic",
     "UPDATE_USER: Testing user update logic",
@@ -70,7 +71,14 @@ markers = [
     "HAS_ACTIVE_EVENT: Testing active status event logic",
     "DELETE_USER_EVENTS: Testing delete all user events",
     "GET_EVENTS: Tesing event list and filtering logic",
-
+    "ADD_REGISTRATION: Testing registration in event logic",
+    "REMOVE_REGISTRATION: Testing remove registration in event logic",
+    "GET_EVENT_REGISTRATIONS: Testing get registration in event logic",
+    "GET_USER_REGISTRATIONS: Testing get registration user in event logic",
+    "GET_EXISTING_REGISTRATION: Testing get existing registartion in event logic",
+    "DELETE_ALL_REGISTRATIONS_FOR_EVENT: Testing delete all registration in event logic",
+    "SET_DELETION_TIME_FOR_EVENT: Tesing set deletion time for event logic",
+    "DELETE_REGISTRATION_BY_USER: Testing delete all registration user in event logic"
 ]
 
 addopts = [
