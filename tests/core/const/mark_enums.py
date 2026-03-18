@@ -17,24 +17,27 @@ class MarkTests(BaseMarkerEnum):
     def __init__(self, epic, layer):
         self.epic = epic
         self.layer = layer
+        self.parent_suite = epic #
 
 class ModuleMarks(BaseMarkerEnum):
-    DAO = ('Data Access Layer', )
-    SERVICES = ('Services Business Logic Layer',)
-    API = ('API Endpoints Layer',)
+    DAO = 'Data Access Layer'
+    SERVICES = 'Services Business Logic Layer'
+    API = 'API Endpoints Layer'
 
     def __init__(self, feature):
         self.feature = feature
+        self.suite = feature #
 
 class ServicesMark(BaseMarkerEnum):
-    EVENTS = ('Events Service',)
-    USERS = ('Users Service',)
-    AUTH = ('Auth Service',)
-    ACTIVATION_CODE = ('Activation Code Service',)
-    EVENT_REGISTRATION = ('Event Registration Service',)
+    EVENTS = 'Events Service'
+    USERS = 'Users Service'
+    AUTH = 'Auth Service'
+    ACTIVATION_CODE = 'Activation Code Service'
+    EVENT_REGISTRATION = 'Event Registration Service'
 
     def __init__(self, feature):
         self.feature = feature
+        self.sub_suite = feature #
 
 
 class FeaturesUserMark(BaseMarkerEnum):

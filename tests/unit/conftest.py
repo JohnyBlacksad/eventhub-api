@@ -105,20 +105,29 @@ async def created_event(event_dao: EventDAO):
 async def event_factory_for_user(event_dao: EventDAO, created_user):
     """Фабрика для создания событий у существующего пользователя."""
 
-    async def aplicate_status_event(status: EventStatusEnum, count: int = 1):
+    async def aplicate_status_event(
+            status: EventStatusEnum,
+            count: int = 1,
+            start_date_days_offset: int = 0
+        ):
+
         user_id = created_user['_id']
         event_list = []
+        events_ids = []
+
         for _ in range(count):
             event_data = event_faker.get_event_data_dict(
                 status=status,
-                created_by=user_id)
+                created_by=user_id,
+                startDate=datetime.now(timezone.utc) + timedelta(days=start_date_days_offset))
             event_id = await event_dao.create_event(event_data)
             event = await event_dao.get_event(event_id)
             event_list.append(event)
+            events_ids.append(event_id)
 
         if len(event_list) > 1:
-            return user_id, event_list
+            return user_id, event_list, events_ids
 
-        return user_id, event_list[0]
+        return user_id, event_list[0], events_ids[0]
 
     return aplicate_status_event

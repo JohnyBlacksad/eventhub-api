@@ -42,6 +42,14 @@ class AllureLabelApplier:
             if hasattr(member, 'severity'):
                 contributions.setdefault('severities', []).append(member.severity)
 
+            # --- Новые атрибуты для suite ---
+            if hasattr(member, 'parent_suite') and 'parent_suite' not in contributions:
+                contributions['parent_suite'] = member.parent_suite
+            if hasattr(member, 'suite') and 'suite' not in contributions:
+                contributions['suite'] = member.suite
+            if hasattr(member, 'sub_suite') and 'sub_suite' not in contributions:
+                contributions['sub_suite'] = member.sub_suite
+
         return contributions
 
     def __get_owner_from_marker(self, item):
@@ -84,7 +92,10 @@ class AllureLabelApplier:
             'layer': None,
             'feature': None,
             'story': None,
-            'severities': []
+            'severities': [],
+            'parent_suite': None,
+            'suite': None,
+            'sub_suite': None,
         }
 
         for mark_name in test_marks:
@@ -101,6 +112,15 @@ class AllureLabelApplier:
             if contrib.get('severities'):
                 all_contributions['severities'].extend(contrib['severities'])
 
+            # --- новые ---
+            if contrib.get('parent_suite') and not all_contributions['parent_suite']:
+                all_contributions['parent_suite'] = contrib['parent_suite']
+            if contrib.get('suite') and not all_contributions['suite']:
+                all_contributions['suite'] = contrib['suite']
+            if contrib.get('sub_suite') and not all_contributions['sub_suite']:
+                all_contributions['sub_suite'] = contrib['sub_suite']
+
+
         epic = all_contributions['epic'] or "Unknown Tests"
         layer = all_contributions['layer'] or "unknown"
         feature = all_contributions['feature'] or "General"
@@ -109,10 +129,22 @@ class AllureLabelApplier:
         description = self._build_description(epic, feature, story, layer)
         owner = self.__get_owner_from_marker(item)
 
+        # Родительские suite-метки (берём из маркеров, если есть, иначе fallback)
+        parent_suite = all_contributions['parent_suite'] or epic
+        suite = all_contributions['suite'] or feature
+        sub_suite = all_contributions.get('sub_suite')
+        if sub_suite:
+            allure.dynamic.sub_suite(sub_suite)
+
         allure.dynamic.epic(epic)
-        allure.dynamic.label("test_layer", layer)
         allure.dynamic.feature(feature)
         allure.dynamic.story(story)
+
+        # Устанавливаем лейблы для Suites
+        allure.dynamic.parent_suite(parent_suite)
+        allure.dynamic.suite(suite)
+
+        allure.dynamic.label("test_layer", layer)
         allure.dynamic.severity(severity)
         allure.dynamic.description(description)
         allure.dynamic.label("owner", owner)

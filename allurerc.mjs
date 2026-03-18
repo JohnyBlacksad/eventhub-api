@@ -15,7 +15,6 @@ function getCoverage() {
             };
         }
 
-        // Запустить Python скрипт
         const result = execSync(`PYTHONPATH=/home/artem/eventhub-api python3 tests/scripts/extract_coverage.py ${xmlPath}`, {
             encoding: 'utf8'
         });
@@ -55,6 +54,7 @@ export default defineConfig({
     },
 
     plugins: {
+        // Твой существующий awesome (группировка по epic/feature/story)
         awesome: {
             options: {
                 reportName: "EventHub API",
@@ -106,6 +106,8 @@ export default defineConfig({
                 ]
             }
         },
+
+        // Твой dashboard
         dashboard: {
             options: {
                 reportName: "Общая статистика",
@@ -133,6 +135,34 @@ export default defineConfig({
                     }
                 ]
             }
+        },
+
+        // Дополнительный отчёт с группировкой по parentSuite/suite/subSuite
+        "suites-view": {
+            import: "@allurereport/plugin-awesome",
+            options: {
+                reportName: "По сьютам (parentSuite → suite → subSuite)",
+                groupBy: ["parentSuite", "suite", "subSuite"]
+                // charts не указаны — будут использованы значения по умолчанию
+            }
+        },
+
+        // Отчёт с группировкой epic → feature → sub_suite (если нужно)
+        "deep-view": {
+            import: "@allurereport/plugin-awesome",
+            options: {
+                reportName: "Глубинная иерархия (epic → feature → sub_suite)",
+                groupBy: ["epic", "feature", "sub_suite"]
+            }
+        },
+
+        // Отчёт только по story
+        "story-view": {
+            import: "@allurereport/plugin-awesome",
+            options: {
+                reportName: "По сториз",
+                groupBy: ["story"]
+            }
         }
     },
 
@@ -142,6 +172,9 @@ export default defineConfig({
         "Layer": "BACKEND",
         "Framework": "pytest + mongomock-motor",
         "Total Coverage": `${coverage.total_coverage}%`,
-        "Branch Coverage": `${coverage.branch_coverage}%`
+        "Branch Coverage": `${coverage.branch_coverage}%`,
+        "Run Date": new Date().toLocaleString("ru-RU"),
+        "Git Branch": process.env.CI_COMMIT_BRANCH || "local",
+        "Commit": process.env.CI_COMMIT_SHA?.slice(0, 8) || "local"
     }
 });
