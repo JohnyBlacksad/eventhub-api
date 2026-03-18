@@ -1,3 +1,4 @@
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
 
@@ -29,3 +30,43 @@ class CoverageParser:
                 if l.attrib.get('hits') == '0'
             ]
         }
+
+    def get_file_coverage(self):
+        file_stats = {}
+
+        for cls_node in self.get_all_classes():
+            file_name = cls_node.attrib.get('filename')
+            if not file_name:
+                continue
+
+            file_name = file_name.split('eventhub-api/')[-1]
+
+            total = 0
+            covered = 0
+
+            for line in cls_node.findall('.//line'):
+                total += 1
+                if int(line.attrib.get('hits', 0)) > 0:
+                    covered += 1
+
+            if total == 0:
+                continue
+
+            if file_name not in file_stats:
+                file_stats[file_name] = {'total': 0, "covered": 0}
+
+            file_stats[file_name]['total'] += total
+            file_stats[file_name]['covered'] += covered
+
+        result = []
+
+        for filename, stats in file_stats.items():
+            result.append(
+                {
+                    'name': filename,
+                    'covered': stats['covered'],
+                    'total': stats['total']
+                }
+            )
+
+        return result

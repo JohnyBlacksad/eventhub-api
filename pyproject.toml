@@ -92,7 +92,7 @@ addopts = [
     "--cov=app",
     "--cov-report=term-missing",
     "--cov-report=xml:./tests/reports/allure-results/coverage.xml",
-    "--cov-report=html:./tests/reports/coverage-html",
+    "--cov-report=html:./tests/reports/allure-results/coverage-html",
     "--alluredir=./tests/reports/allure-results",
     "--verbose"
 ]

@@ -54,7 +54,7 @@ export default defineConfig({
     },
 
     plugins: {
-        // Твой существующий awesome (группировка по epic/feature/story)
+        // awesome дашборд (группировка по epic/feature/story)
         awesome: {
             options: {
                 reportName: "EventHub API",
@@ -107,7 +107,6 @@ export default defineConfig({
             }
         },
 
-        // Твой dashboard
         dashboard: {
             options: {
                 reportName: "Общая статистика",
@@ -142,8 +141,33 @@ export default defineConfig({
             import: "@allurereport/plugin-awesome",
             options: {
                 reportName: "По сьютам (parentSuite → suite → subSuite)",
-                groupBy: ["parentSuite", "suite", "subSuite"]
+                groupBy: ["parentSuite", "suite", "subSuite"],
                 // charts не указаны — будут использованы значения по умолчанию
+                charts: [
+                    {
+                        type: "testResultSeverities",
+                        title: "Серьёзность тестов",
+                        levels: ["BLOCKER", "CRITICAL", "NORMAL", "MINOR", "TRIVIAL"],
+                        statuses: ["passed", "failed", "broken", "skipped", "unknown"],
+                        includeUnset: true
+                    },
+                    {
+                        type: "testBaseGrowthDynamics",
+                        title: "Динамика количества тестов",
+                        statuses: ["passed", "failed", "broken", "skipped", "unknown"]
+                    },
+                    {
+                        type: "coverageDiff",
+                        title: "Карта покрытия кода"
+                    },
+                    {
+                        type: "stabilityDistribution",
+                        title: "Стабильность по функционалу",
+                        threshold: 90,
+                        skipStatuses: ["skipped", "unknown"],
+                        groupBy: "parentSuite"
+                    }
+                ]
             }
         },
 
@@ -173,6 +197,7 @@ export default defineConfig({
         "Framework": "pytest + mongomock-motor",
         "Total Coverage": `${coverage.total_coverage}%`,
         "Branch Coverage": `${coverage.branch_coverage}%`,
+        "Coverage HTML Report": "<a href='coverage-html/index.html' target='_blank'>Открыть</a>",
         "Run Date": new Date().toLocaleString("ru-RU"),
         "Git Branch": process.env.CI_COMMIT_BRANCH || "local",
         "Commit": process.env.CI_COMMIT_SHA?.slice(0, 8) || "local"
