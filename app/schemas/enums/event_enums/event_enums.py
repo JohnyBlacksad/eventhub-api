@@ -14,9 +14,10 @@ class EventStatusEnum(StrEnum):
         CANCELLED: Событие отменено организатором.
         FINISHED: Событие завершено.
     """
-    PUBLISHED = 'published'
-    CANCELLED = 'cancelled'
-    FINISHED = 'finished'
+
+    PUBLISHED = "published"
+    CANCELLED = "cancelled"
+    FINISHED = "finished"
 
 
 class RecurrenceEnum(StrEnum):
@@ -29,8 +30,9 @@ class RecurrenceEnum(StrEnum):
         MONTHLY: Ежемесячно.
         YEARLY: Ежегодно.
     """
-    NONE = 'none'
-    DAILY = 'daily'
-    WEEKLY = 'weekly'
-    MONTHLY = 'monthly'
-    YEARLY = 'yearly'
+
+    NONE = "none"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"

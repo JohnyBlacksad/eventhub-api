@@ -1,18 +1,19 @@
-import pytest
-from uuid import uuid4
-from bson import ObjectId
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
+import pytest
+from bson import ObjectId
+from mongomock_motor import AsyncMongoMockCollection
+
+from app.models.activation_code import ActivationCodeDAO
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
-from app.models.activation_code import ActivationCodeDAO
-from app.schemas.enums.event_enums.event_enums import EventStatusEnum
-from tests.mock.mongo_mock import get_mongo_mock
 from app.models.user import UserDAO
-from mongomock_motor import AsyncMongoMockCollection
-from tests.core.user_data_factory.fake_user_data import faker
-from tests.core.event_data_factory.fake_event_data import event_faker
+from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 from app.schemas.enums.user_enums.users_status import UserRoleEnum
+from tests.core.event_data_factory.fake_event_data import event_faker
+from tests.core.user_data_factory.fake_user_data import faker
+from tests.mock.mongo_mock import get_mongo_mock
 
 
 @pytest.fixture
@@ -20,14 +21,17 @@ def mongo_mock():
     db = get_mongo_mock()
     return db
 
+
 @pytest.fixture
 def user_collections(mongo_mock):
     user_collection = mongo_mock.get_users_collection()
     return user_collection
 
+
 @pytest.fixture
 def mock_user_dao(user_collections: AsyncMongoMockCollection):
     return UserDAO(user_collections)
+
 
 @pytest.fixture
 def activation_code_collection(mongo_mock):
@@ -43,6 +47,7 @@ def activation_code_dao(activation_code_collection: AsyncMongoMockCollection):
 async def setup_indexes_for_activation_code(activation_code_collection: AsyncMongoMockCollection):
     await ActivationCodeDAO.setup_indexes(activation_code_collection)
     return activation_code_collection
+
 
 @pytest.fixture
 def registration_collection(mongo_mock):
@@ -64,6 +69,7 @@ async def setup_indexes_for_registration(registration_collection: AsyncMongoMock
 def event_collection(mongo_mock):
     return mongo_mock.get_events_collection()
 
+
 @pytest.fixture
 def event_dao(event_collection: AsyncMongoMockCollection):
     return EventDAO(event_collection)
@@ -76,6 +82,7 @@ async def created_user(mock_user_dao: UserDAO):
     db_user = await mock_user_dao.get_user_by_id(create_user_id)
     return db_user
 
+
 @pytest.fixture
 async def base_users(mock_user_dao: UserDAO):
     users_list = [faker.get_user_register_data_dict() for _ in range(10)]
@@ -83,6 +90,7 @@ async def base_users(mock_user_dao: UserDAO):
         await mock_user_dao.create_user(user)
 
     return mock_user_dao
+
 
 @pytest.fixture
 async def users_with_different_dates(mock_user_dao: UserDAO) -> dict[str, list | datetime]:
@@ -101,7 +109,7 @@ async def users_with_different_dates(mock_user_dao: UserDAO) -> dict[str, list |
     early_users = []
     for _ in range(3):
         user_data = faker.get_user_register_data_dict()
-        user_data['created_at'] = now - timedelta(seconds=10)
+        user_data["created_at"] = now - timedelta(seconds=10)
         user_id = await mock_user_dao.create_user(user_data)
         db_user = await mock_user_dao.get_user_by_id(user_id)
         early_users.append(db_user)
@@ -110,7 +118,7 @@ async def users_with_different_dates(mock_user_dao: UserDAO) -> dict[str, list |
     middle_users = []
     for _ in range(5):
         user_data = faker.get_user_register_data_dict()
-        user_data['created_at'] = now
+        user_data["created_at"] = now
         user_id = await mock_user_dao.create_user(user_data)
         db_user = await mock_user_dao.get_user_by_id(user_id)
         middle_users.append(db_user)
@@ -119,17 +127,12 @@ async def users_with_different_dates(mock_user_dao: UserDAO) -> dict[str, list |
     late_users = []
     for _ in range(2):
         user_data = faker.get_user_register_data_dict()
-        user_data['created_at'] = now + timedelta(seconds=10)
+        user_data["created_at"] = now + timedelta(seconds=10)
         user_id = await mock_user_dao.create_user(user_data)
         db_user = await mock_user_dao.get_user_by_id(user_id)
         late_users.append(db_user)
 
-    return {
-        'early': early_users,
-        'middle': middle_users,
-        'late': late_users,
-        'now': now
-    }
+    return {"early": early_users, "middle": middle_users, "late": late_users, "now": now}
 
 
 @pytest.fixture
@@ -139,17 +142,13 @@ async def created_event(event_dao: EventDAO):
     event = await event_dao.get_event(event_id)
     return event
 
+
 @pytest.fixture
 async def event_factory_for_user(event_dao: EventDAO, created_user):
     """Фабрика для создания событий у существующего пользователя."""
 
-    async def aplicate_status_event(
-            status: EventStatusEnum,
-            count: int = 1,
-            start_date_days_offset: int = 0
-        ):
-
-        user_id = created_user['_id']
+    async def aplicate_status_event(status: EventStatusEnum, count: int = 1, start_date_days_offset: int = 0):
+        user_id = created_user["_id"]
         event_list = []
         events_ids = []
 
@@ -157,7 +156,8 @@ async def event_factory_for_user(event_dao: EventDAO, created_user):
             event_data = event_faker.get_event_data_dict(
                 status=status,
                 created_by=user_id,
-                startDate=datetime.now(timezone.utc) + timedelta(days=start_date_days_offset))
+                startDate=datetime.now(timezone.utc) + timedelta(days=start_date_days_offset),
+            )
             event_id = await event_dao.create_event(event_data)
             event = await event_dao.get_event(event_id)
             event_list.append(event)
@@ -171,13 +171,11 @@ async def event_factory_for_user(event_dao: EventDAO, created_user):
     return aplicate_status_event
 
 
-
-
 @pytest.fixture
 async def created_registration(registration_dao: RegistrationDAO, created_user: dict, created_event: dict):
     """Создать регистрацию для пользователя на событие."""
-    user_id = created_user['_id']
-    event_id = created_event['_id']
+    user_id = created_user["_id"]
+    event_id = created_event["_id"]
 
     await registration_dao.add_registration(str(event_id), str(user_id))
 
@@ -191,6 +189,7 @@ async def user_factory(mock_user_dao: UserDAO):
 
     Возвращает ID созданного пользователя.
     """
+
     async def factory() -> str:
         user_data = faker.get_user_register_data_dict()
         user_id = await mock_user_dao.create_user(user_data)
@@ -210,6 +209,7 @@ async def registration_factory(registration_dao: RegistrationDAO, user_factory):
     Returns:
         dict: Созданная регистрация.
     """
+
     async def factory(event_id: str, user_id: str | None = None) -> dict:
         if user_id is None:
             user_id = await user_factory()
@@ -237,6 +237,7 @@ async def event_registrations_factory(registration_dao: RegistrationDAO, user_fa
     Returns:
         list[dict]: Список регистраций.
     """
+
     async def factory(event_id: str, count: int = 1) -> list[dict]:
         registrations = []
         for _ in range(count):
@@ -249,8 +250,6 @@ async def event_registrations_factory(registration_dao: RegistrationDAO, user_fa
     return factory
 
 
-
-
 @pytest.fixture
 def code_factory_data():
     """Фабрика данных для создания кода активации.
@@ -258,12 +257,12 @@ def code_factory_data():
     Returns:
         dict: Данные для создания кода.
     """
+
     def factory(role=None, code=None) -> dict:
         from app.schemas.enums.user_enums.users_status import UserRoleEnum
-        return {
-            'role': role or UserRoleEnum.ORGANIZER,
-            'code': code or 'test-code-default'
-        }
+
+        return {"role": role or UserRoleEnum.ORGANIZER, "code": code or "test-code-default"}
+
     return factory
 
 
@@ -290,27 +289,23 @@ async def activation_code_factory(activation_code_dao: ActivationCodeDAO):
         dict: Созданный код активации.
     """
 
-
     async def factory(
         role: UserRoleEnum | None = None,
         code: str | None = None,
         is_used: bool = False,
-        created_at: datetime | None = None
+        created_at: datetime | None = None,
     ) -> dict:
         code_data = {
-            'role': role or UserRoleEnum.ORGANIZER,
-            'code': code or str(uuid4()),
-            'created_at': created_at or datetime.now(timezone.utc)
+            "role": role or UserRoleEnum.ORGANIZER,
+            "code": code or str(uuid4()),
+            "created_at": created_at or datetime.now(timezone.utc),
         }
 
         code_id = await activation_code_dao.create_code(code_data)
 
         # Если нужен использованный код - обновляем вручную
         if is_used:
-            await activation_code_dao.collection.update_one(
-                {'_id': ObjectId(code_id)},
-                {'$set': {'is_used': True}}
-            )
+            await activation_code_dao.collection.update_one({"_id": ObjectId(code_id)}, {"$set": {"is_used": True}})
 
         created_code = await activation_code_dao.get_code(code_id)
 
@@ -339,14 +334,14 @@ async def activation_codes_factory(activation_code_dao: ActivationCodeDAO):
         count: int = 1,
         role: UserRoleEnum | None = None,
         is_used_list: list[bool] | None = None,
-        created_at_list: list[datetime] | None = None
+        created_at_list: list[datetime] | None = None,
     ) -> list[dict]:
         codes = []
 
         for i in range(count):
             code_data = {
-                'role': role or UserRoleEnum.ORGANIZER,
-                'code': str(uuid4()),
+                "role": role or UserRoleEnum.ORGANIZER,
+                "code": str(uuid4()),
             }
 
             code_id = await activation_code_dao.create_code(code_data)
@@ -354,16 +349,13 @@ async def activation_codes_factory(activation_code_dao: ActivationCodeDAO):
             # Обновляем created_at и is_used после создания
             update_data = {}
             if created_at_list and i < len(created_at_list):
-                update_data['created_at'] = created_at_list[i]
+                update_data["created_at"] = created_at_list[i]
 
             if is_used_list and i < len(is_used_list) and is_used_list[i]:
-                update_data['is_used'] = True
+                update_data["is_used"] = True
 
             if update_data:
-                await activation_code_dao.collection.update_one(
-                    {'_id': ObjectId(code_id)},
-                    {'$set': update_data}
-                )
+                await activation_code_dao.collection.update_one({"_id": ObjectId(code_id)}, {"$set": update_data})
 
             created_code = await activation_code_dao.get_code(code_id)
             codes.append(created_code)

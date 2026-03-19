@@ -3,10 +3,12 @@
 Модуль содержит EventService для бизнес-логики событий:
 создание, чтение, обновление, удаление событий и регистраций.
 """
-from bson import ObjectId
-from typing import Optional
 from datetime import datetime, timedelta, timezone
+from typing import Optional
+
+from bson import ObjectId
 from fastapi import HTTPException, status
+
 from app.config import settings
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
@@ -25,11 +27,7 @@ class EventService:
         registration_dao: Data Access Object для регистраций.
     """
 
-    def __init__(
-        self,
-        event_dao: EventDAO,
-        registration_dao: RegistrationDAO
-    ):
+    def __init__(self, event_dao: EventDAO, registration_dao: RegistrationDAO):
         """Инициализация EventService.
 
         Args:
@@ -39,11 +37,7 @@ class EventService:
         self.event_dao = event_dao
         self.registration_dao = registration_dao
 
-    async def create_event(
-        self,
-        event_data: EventCreateModel,
-        user_id: str
-    ) -> EventResponseModel:
+    async def create_event(self, event_data: EventCreateModel, user_id: str) -> EventResponseModel:
         """Создать новое событие.
 
         Args:
@@ -57,8 +51,8 @@ class EventService:
             HTTPException: 500 если событие не создано.
         """
         event_dict = event_data.model_dump(by_alias=True)
-        event_dict['created_by'] = ObjectId(user_id)
-        event_dict['created_at'] = datetime.now(timezone.utc)
+        event_dict["created_by"] = ObjectId(user_id)
+        event_dict["created_at"] = datetime.now(timezone.utc)
 
         new_id = await self.event_dao.create_event(event_dict)
         raw_event = await self.event_dao.get_event(str(new_id))
@@ -66,7 +60,7 @@ class EventService:
         if not raw_event:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='Server error. Event not created, please try again later.'
+                detail="Server error. Event not created, please try again later.",
             )
 
         return EventResponseModel.model_validate(raw_event, from_attributes=True)
@@ -86,26 +80,17 @@ class EventService:
         """
         # Валидация ObjectId
         if not ObjectId.is_valid(event_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Invalid event ID format'
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
         raw_event = await self.event_dao.get_event(event_id)
 
         if not raw_event:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Event not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         return EventResponseModel.model_validate(raw_event, from_attributes=True)
 
     async def get_events(
-        self,
-        filters: Optional[EventFilterParams] = None,
-        skip: int = 0,
-        limit: int = 10
+        self, filters: Optional[EventFilterParams] = None, skip: int = 0, limit: int = 10
     ) -> list[EventResponseModel]:
         """Получить список событий с пагинацией.
 
@@ -118,26 +103,18 @@ class EventService:
             list[EventResponseModel]: Список событий.
         """
         raw_event_list = await self.event_dao.get_events(
-            filter_obj=filters,                                     # type: ignore
+            filter_obj=filters,  # type: ignore
             skip=skip,
             limit=limit,
-            sort_by=filters.sort_by,                                # type: ignore
-            sort_order=filters.sort_order                           # type: ignore
+            sort_by=filters.sort_by,  # type: ignore
+            sort_order=filters.sort_order,  # type: ignore
         )
 
-        result = [
-            EventResponseModel.model_validate(event, from_attributes=True)
-            for event in raw_event_list
-        ]
+        result = [EventResponseModel.model_validate(event, from_attributes=True) for event in raw_event_list]
 
         return result
 
-    async def update_event(
-        self,
-        event_id: str,
-        user_id: str,
-        update_data: EventUpdateModel
-    ) -> EventResponseModel:
+    async def update_event(self, event_id: str, user_id: str, update_data: EventUpdateModel) -> EventResponseModel:
         """Обновить данные события.
 
         Args:
@@ -155,38 +132,28 @@ class EventService:
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Event not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-        if current_event['created_by'] != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail='You are not the creator of this event'
-            )
+        if current_event["created_by"] != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not the creator of this event")
 
         data = update_data.model_dump(by_alias=True, exclude_none=True)
 
-        if 'status' in data:
-            new_status = data['status']
+        if "status" in data:
+            new_status = data["status"]
             cleanup_seconds = settings.events_config.cleanup_sec
             death_date = datetime.now(timezone.utc) + timedelta(seconds=cleanup_seconds)
             if new_status in [EventStatusEnum.CANCELLED, EventStatusEnum.FINISHED]:
-                data['deleted_at'] = death_date
+                data["deleted_at"] = death_date
                 await self.registration_dao.set_deletion_time_for_event(event_id, death_date)
             else:
-                data['deleted_at'] = None
+                data["deleted_at"] = None
 
         updated_event = await self.event_dao.update_event(event_id, data)
 
         return EventResponseModel.model_validate(updated_event, from_attributes=True)
 
-    async def delete_event(
-        self,
-        event_id: str,
-        user_id: str
-    ) -> bool:
+    async def delete_event(self, event_id: str, user_id: str) -> bool:
         """Удалить событие.
 
         Args:
@@ -203,16 +170,10 @@ class EventService:
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Event not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-        if current_event['created_by'] != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail='You are not the creator of this event'
-            )
+        if current_event["created_by"] != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not the creator of this event")
         await self.registration_dao.delete_all_registrations_for_event(event_id)
         result = await self.event_dao.delete_event(event_id)
         return result
@@ -235,20 +196,13 @@ class EventService:
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Event not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         await self.registration_dao.delete_all_registrations_for_event(event_id)
         result = await self.event_dao.delete_event(event_id)
         return result
 
-    async def register_for_event(
-        self,
-        event_id: str,
-        user_id: str
-    ) -> dict:
+    async def register_for_event(self, event_id: str, user_id: str) -> dict:
         """Зарегистрировать пользователя на событие.
 
         Args:
@@ -266,51 +220,33 @@ class EventService:
         """
         # Валидация ObjectId
         if not ObjectId.is_valid(event_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Invalid event ID format'
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Event not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-        existing = await self.registration_dao.get_existing_registration(
-            event_id, user_id
-        )
+        existing = await self.registration_dao.get_existing_registration(event_id, user_id)
 
         if existing:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='You are already registered for this event'
+                status_code=status.HTTP_400_BAD_REQUEST, detail="You are already registered for this event"
             )
 
-        if current_event.get('max_participants') is not None:
+        if current_event.get("max_participants") is not None:
             registrations = await self.registration_dao.get_event_registrations(
-                event_id=event_id,
-                skip=0,
-                limit=current_event['max_participants'] + 1
+                event_id=event_id, skip=0, limit=current_event["max_participants"] + 1
             )
 
-            if len(registrations) >= current_event['max_participants']:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail='Event is full'
-                )
+            if len(registrations) >= current_event["max_participants"]:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Event is full")
 
         await self.registration_dao.add_registration(event_id, user_id)
 
-        return {'status': 'registered', 'event_id': event_id}
+        return {"status": "registered", "event_id": event_id}
 
-    async def unregister_from_event(
-        self,
-        event_id: str,
-        user_id: str
-    ) -> dict:
+    async def unregister_from_event(self, event_id: str, user_id: str) -> dict:
         """Отменить регистрацию пользователя на событие.
 
         Args:
@@ -327,35 +263,21 @@ class EventService:
         """
         # Валидация ObjectId
         if not ObjectId.is_valid(event_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Invalid event ID format'
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Event not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         result = await self.registration_dao.remove_registration(event_id, user_id)
 
         if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Registration not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Registration not found")
 
-        return {'status': 'unregistered', 'event_id': event_id}
+        return {"status": "unregistered", "event_id": event_id}
 
-    async def get_event_participants(
-        self,
-        event_id: str,
-        skip: int = 0,
-        limit: int = 50
-    ) -> list[dict]:
+    async def get_event_participants(self, event_id: str, skip: int = 0, limit: int = 50) -> list[dict]:
         """Получить список участников события.
 
         Args:
@@ -372,40 +294,27 @@ class EventService:
         """
         # Валидация ObjectId
         if not ObjectId.is_valid(event_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Invalid event ID format'
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Event not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-        participants = await self.registration_dao.get_event_registrations(
-            event_id=event_id,
-            skip=skip,
-            limit=limit
-        )
+        participants = await self.registration_dao.get_event_registrations(event_id=event_id, skip=skip, limit=limit)
 
         # Конвертируем ObjectId в строку для сериализации
         for p in participants:
-            if '_id' in p:
-                p['_id'] = str(p['_id'])
-            if 'event_id' in p:
-                p['event_id'] = str(p['event_id'])
-            if 'user_id' in p:
-                p['user_id'] = str(p['user_id'])
+            if "_id" in p:
+                p["_id"] = str(p["_id"])
+            if "event_id" in p:
+                p["event_id"] = str(p["event_id"])
+            if "user_id" in p:
+                p["user_id"] = str(p["user_id"])
 
         return participants
 
-    async def get_user_registrations(
-        self,
-        user_id: str
-    ) -> list[dict]:
+    async def get_user_registrations(self, user_id: str) -> list[dict]:
         """Получить список регистраций пользователя.
 
         Args:
@@ -418,17 +327,17 @@ class EventService:
 
         # Конвертируем ObjectId в строку для сериализации
         for r in registrations:
-            if '_id' in r:
-                r['_id'] = str(r['_id'])
-            if 'event_id' in r:
-                r['event_id'] = str(r['event_id'])
-            if 'user_id' in r:
-                r['user_id'] = str(r['user_id'])
+            if "_id" in r:
+                r["_id"] = str(r["_id"])
+            if "event_id" in r:
+                r["event_id"] = str(r["event_id"])
+            if "user_id" in r:
+                r["user_id"] = str(r["user_id"])
 
         return registrations
 
     async def delete_all_user_events_and_registrations(self, user_id: str) -> bool:
-        '''Удаление регистраций и событий пользователя по user_id'''
+        """Удаление регистраций и событий пользователя по user_id"""
 
         is_registrations_deleted = await self.registration_dao.delete_registration_by_user(user_id)
         is_events_deleted = await self.event_dao.delete_events_by_user(user_id)

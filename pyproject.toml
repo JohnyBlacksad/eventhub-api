@@ -31,6 +31,7 @@ ruff = "^0.1.14"
 faker = "^40.11.0"
 mongomock-motor = "^0.0.36"
 pytest-subtests = "^0.15.0"
+mypy = "^1.19.1"
 
 [build-system]
 requires = ["poetry-core"]
@@ -84,7 +85,12 @@ markers = [
     "GET_CODES: Testing get acivation codes list logic",
     "USE_CODE: Teting use activation code logic",
     "DELETE_CODE: Testing delete activation code logic",
-    "FILTER_CODES: Testing get filtered codes list logic"
+    "FILTER_CODES: Testing get filtered codes list logic",
+    "HASH_PASSWORD: Testing hash password logic",
+    "VERIFY_PASSWORD: Testing verify password logic",
+    "CREATE_TOKEN: Testing creating token logic",
+    "DECODE_TOKEN: Testing decode token logic",
+    "REFRESH_TOKEN: Testing refresg token logic"
 ]
 
 addopts = [
@@ -92,7 +98,22 @@ addopts = [
     "--cov=app",
     "--cov-report=term-missing",
     "--cov-report=xml:./tests/reports/allure-results/coverage.xml",
-    "--cov-report=html:./tests/reports/allure-results/coverage-html",
+    "--cov-report=html:./tests/reports/coverage-html",
     "--alluredir=./tests/reports/allure-results",
     "--verbose"
 ]
+
+
+[tool.ruff]
+select = ["E", "F", "I", "B", "UP", "SIM", "C4"]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

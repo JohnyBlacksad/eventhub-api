@@ -13,4 +13,5 @@ class EventsConfig(BaseModel):
         cleanup_sec: Время в секундах через которое события со статусом
             CANCELLED или FINISHED будут помечены на удаление.
     """
+
     cleanup_sec: int

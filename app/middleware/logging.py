@@ -6,11 +6,13 @@ Middleware для логирования HTTP запросов.
 
 import time
 from typing import Callable
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+
 from app.utils.logger import setup_logger
 
-logger = setup_logger('eventhub.middleware')
+logger = setup_logger("eventhub.middleware")
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -34,8 +36,8 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         """
 
         start_time = time.time()
-        #status_code = 500
-        #response = None
+        # status_code = 500
+        # response = None
 
         try:
             response = await call_next(request)
@@ -49,9 +51,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                     "path": request.url.path,
                     "status_code": 500,
                     "duration_ms": round(duration * 1000, 2),
-                    "client_ip": request.client.host if request.client else 'unknown',
+                    "client_ip": request.client.host if request.client else "unknown",
                     "user_agent": request.headers.get("user-agent", "unknown"),
-                }
+                },
             )
             raise
 
@@ -64,9 +66,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 "path": request.url.path,
                 "status_code": response.status_code,
                 "duration_ms": round(duration * 1000, 2),
-                "client_ip": request.client.host if request.client else 'unknown',
+                "client_ip": request.client.host if request.client else "unknown",
                 "user_agent": request.headers.get("user-agent", "unknown"),
-            }
+            },
         )
 
         return response

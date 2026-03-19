@@ -1,8 +1,11 @@
-from faker import Faker
-from bson import ObjectId
-from app.schemas.users import UserRegisterModel, UserResponseModel
-from app.schemas.enums.user_enums.users_status import UserRoleEnum
 import random
+
+from bson import ObjectId
+from faker import Faker
+
+from app.schemas.enums.user_enums.users_status import UserRoleEnum
+from app.schemas.users import UserRegisterModel
+
 
 class FakeUserData:
     def __init__(self, faker: Faker):
@@ -10,11 +13,11 @@ class FakeUserData:
 
     def get_user_register_data_dict(self, **kwargs) -> dict:
         user_data = {
-            "email": self.faker.email(domain='@test.com'),
+            "email": self.faker.email(domain="@test.com"),
             "firstName": self.faker.first_name(),
-            'lastName': self.faker.last_name(),
-            'phoneNumber': self.faker.phone_number(),
-            'password': self.faker.password(length=12)
+            "lastName": self.faker.last_name(),
+            "phoneNumber": self.faker.phone_number(),
+            "password": self.faker.password(length=12),
         }
 
         user_data.update(**kwargs)
@@ -34,4 +37,4 @@ class FakeUserData:
         return random.choice(roles)
 
 
-faker = FakeUserData(Faker('ru_RU'))
+faker = FakeUserData(Faker("ru_RU"))

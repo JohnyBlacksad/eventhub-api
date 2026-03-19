@@ -5,6 +5,7 @@
 """
 
 from fastapi import Depends
+
 from app.database import db_client
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
@@ -17,7 +18,7 @@ def get_events_collection():
     Returns:
         Коллекция MongoDB для событий.
     """
-    return db_client.get_db()['events']  # type: ignore
+    return db_client.get_db()["events"]  # type: ignore
 
 
 def get_event_dao(collection=Depends(get_events_collection)) -> EventDAO:
@@ -38,7 +39,7 @@ def get_registrations_collection():
     Returns:
         Коллекция MongoDB для регистраций.
     """
-    return db_client.get_db()['registrations']  # type: ignore
+    return db_client.get_db()["registrations"]  # type: ignore
 
 
 def get_registration_dao(collection=Depends(get_registrations_collection)) -> RegistrationDAO:
@@ -53,10 +54,8 @@ def get_registration_dao(collection=Depends(get_registrations_collection)) -> Re
     return RegistrationDAO(collection)
 
 
-
 def get_event_service(
-    event_dao: EventDAO = Depends(get_event_dao),
-    registration_dao: RegistrationDAO = Depends(get_registration_dao)
+    event_dao: EventDAO = Depends(get_event_dao), registration_dao: RegistrationDAO = Depends(get_registration_dao)
 ) -> EventService:
     """Создать EventService с зависимостями.
 
@@ -67,7 +66,4 @@ def get_event_service(
     Returns:
         EventService: Сервис для бизнес-логики событий.
     """
-    return EventService(
-        event_dao=event_dao,
-        registration_dao=registration_dao
-    )
+    return EventService(event_dao=event_dao, registration_dao=registration_dao)

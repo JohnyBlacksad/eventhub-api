@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+
 from tests.scripts.coverage_parser import CoverageParser
 
 MIN_TOTAL_COVERAGE = 75.0
@@ -11,6 +12,7 @@ REQUIRED_MODULES = [
     "app.services.user",
     "app.models.user",
 ]
+
 
 def run_quality_gate(xml_path: str):
     if not Path(xml_path).exists():
@@ -31,8 +33,8 @@ def run_quality_gate(xml_path: str):
         data = parser.parse_class_data(cls_node)
 
         for req in REQUIRED_MODULES:
-            if req in data['name']:
-                found_modules[req] = min(found_modules.get(req, 100), data['coverage'])
+            if req in data["name"]:
+                found_modules[req] = min(found_modules.get(req, 100), data["coverage"])
 
     for req in REQUIRED_MODULES:
         if req not in found_modules:
@@ -48,6 +50,7 @@ def run_quality_gate(xml_path: str):
     print(f"PASS: Quality Gate passed with {total_cov:.1f}% total coverage")
     sys.exit(0)
 
+
 if __name__ == "__main__":
-    xml_path = sys.argv[1] if len(sys.argv) > 1 else './tests/reports/allure-results/coverage.xml'
+    xml_path = sys.argv[1] if len(sys.argv) > 1 else "./tests/reports/allure-results/coverage.xml"
     run_quality_gate(xml_path)

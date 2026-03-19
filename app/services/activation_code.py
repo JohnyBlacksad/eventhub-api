@@ -6,9 +6,15 @@
 
 from typing import Optional
 from uuid import uuid4
+
 from fastapi import HTTPException, status
+
 from app.models.activation_code import ActivationCodeDAO
-from app.schemas.activation_code import ActivationCodeModelResponse, CodeFiltersResponse, GetActivationCodesResponseModel
+from app.schemas.activation_code import (
+    ActivationCodeModelResponse,
+    CodeFiltersResponse,
+    GetActivationCodesResponseModel,
+)
 from app.schemas.enums.user_enums.users_status import UserRoleEnum
 
 
@@ -38,14 +44,13 @@ class ActivationCodeService:
         Returns:
             dict: Словарь с данными кода (role, code).
         """
-        code_data = {
-            'role': role,
-            'code': str(uuid4())
-        }
+        code_data = {"role": role, "code": str(uuid4())}
 
         return code_data
 
-    async def create_code(self, role: UserRoleEnum = UserRoleEnum.ORGANIZER, code: Optional[str] = None) -> ActivationCodeModelResponse:
+    async def create_code(
+        self, role: UserRoleEnum = UserRoleEnum.ORGANIZER, code: Optional[str] = None
+    ) -> ActivationCodeModelResponse:
         """Создать новый код активации.
 
         Args:
@@ -58,14 +63,16 @@ class ActivationCodeService:
         if not code:
             code_data = await self.__generate_code(role)
         else:
-            code_data = {'role': role, 'code': code}
+            code_data = {"role": role, "code": code}
 
         code_id = await self.code_dao.create_code(code_data)
         created_code = await self.code_dao.get_code(code_id)
-        created_code['_id'] = str(created_code['_id'])              # type: ignore
+        created_code["_id"] = str(created_code["_id"])  # type: ignore
         return ActivationCodeModelResponse.model_validate(created_code)
 
-    async def get_codes(self, skip: int = 0, limit: int = 100, filters: Optional[CodeFiltersResponse] = None) -> GetActivationCodesResponseModel:
+    async def get_codes(
+        self, skip: int = 0, limit: int = 100, filters: Optional[CodeFiltersResponse] = None
+    ) -> GetActivationCodesResponseModel:
         """Получить список кодов активации с пагинацией и фильтрами.
 
         Args:
@@ -76,18 +83,14 @@ class ActivationCodeService:
         Returns:
             GetActivationCodesResponseModel: Список кодов.
         """
-        raw_list = await self.code_dao.get_codes(
-            skip=skip,
-            limit=limit,
-            filters=filters
-        )
+        raw_list = await self.code_dao.get_codes(skip=skip, limit=limit, filters=filters)
 
         # Конвертируем ObjectId в строку для каждого кода
         codes = []
         for code in raw_list:
-            code['_id'] = str(code['_id'])
-            if code.get('activated_by'):
-                code['activated_by'] = str(code['activated_by'])
+            code["_id"] = str(code["_id"])
+            if code.get("activated_by"):
+                code["activated_by"] = str(code["activated_by"])
             codes.append(ActivationCodeModelResponse.model_validate(code, from_attributes=True))
 
         return GetActivationCodesResponseModel(codes=codes)
@@ -107,10 +110,7 @@ class ActivationCodeService:
         response = await self.code_dao.get_code(code_id=code_id)
 
         if not response:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Code not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Code not found")
 
         return ActivationCodeModelResponse.model_validate(response, from_attributes=True)
 
@@ -129,11 +129,6 @@ class ActivationCodeService:
         current_code = await self.code_dao.get_code(code_id)
 
         if not current_code:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Code not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Code not found")
 
         return await self.code_dao.delete_code(code_id)
-
-

@@ -5,14 +5,16 @@
 """
 
 from fastapi import Depends
+
 from app.database import db_client
-from app.models.user import UserDAO
+from app.dependency_container.activation_code_deps import get_activation_code_dao
+from app.dependency_container.event_deps import get_event_dao
 from app.models.activation_code import ActivationCodeDAO
 from app.models.events import EventDAO
+from app.models.user import UserDAO
 from app.services.auth import AuthService
 from app.services.user import UserService
-from app.dependency_container.event_deps import get_event_dao
-from app.dependency_container.activation_code_deps import get_activation_code_dao
+
 
 def get_user_collections():
     """Получить коллекцию users из MongoDB.
@@ -20,7 +22,7 @@ def get_user_collections():
     Returns:
         Коллекция MongoDB для пользователей.
     """
-    return db_client.get_db()['users']  # type: ignore
+    return db_client.get_db()["users"]  # type: ignore
 
 
 def get_user_dao(collection=Depends(get_user_collections)) -> UserDAO:
@@ -48,7 +50,7 @@ def get_user_service(
     dao: UserDAO = Depends(get_user_dao),
     auth: AuthService = Depends(get_auth_service),
     event: EventDAO = Depends(get_event_dao),
-    code: ActivationCodeDAO = Depends(get_activation_code_dao)
+    code: ActivationCodeDAO = Depends(get_activation_code_dao),
 ) -> UserService:
     """Создать UserService с зависимостями.
 

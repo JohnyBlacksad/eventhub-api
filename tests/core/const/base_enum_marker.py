@@ -19,8 +19,9 @@ class BaseMarkerEnum(Enum):
         """Возвращает список всех зарегистрированных классов enum'ов."""
         return list(cls.__registry)
 
+
 def _register_all_enums():
     """Принудительно зарегистрировать все enum'ы."""
-    from tests.core.const import mark_enums
+
 
 _register_all_enums()

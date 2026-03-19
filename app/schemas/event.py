@@ -6,9 +6,11 @@
 
 from datetime import datetime, timezone
 from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict, model_validator
-from app.schemas.users import PyObjectId
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
 from app.schemas.enums.event_enums.event_enums import EventStatusEnum, RecurrenceEnum
+from app.schemas.users import PyObjectId
 
 
 class EventLocationModel(BaseModel):
@@ -21,6 +23,7 @@ class EventLocationModel(BaseModel):
         lat: Широта (опционально).
         lon: Долгота (опционально).
     """
+
     country: str
     city: str
     address: str
@@ -43,22 +46,20 @@ class EventBaseModel(BaseModel):
         status: Статус события (published, cancelled, finished).
         recurrence: Тип повторения (none, daily, weekly, monthly, yearly).
     """
-    model_config = ConfigDict(
-        populate_by_name=True,
-        from_attributes=True
-    )
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     title: str = Field(min_length=3, max_length=50)
     description: str = Field(min_length=15, max_length=300)
     location: EventLocationModel
-    start_date: datetime = Field(alias='startDate')
-    end_date: Optional[datetime] = Field(default=None, alias='endDate')
-    max_participants: Optional[int] = Field(default=None, alias='maxParticipants')
+    start_date: datetime = Field(alias="startDate")
+    end_date: Optional[datetime] = Field(default=None, alias="endDate")
+    max_participants: Optional[int] = Field(default=None, alias="maxParticipants")
     status: EventStatusEnum = EventStatusEnum.PUBLISHED
     recurrence: RecurrenceEnum = RecurrenceEnum.NONE
 
-    @model_validator(mode='after')
-    def validate_dates(self) -> 'EventBaseModel':
+    @model_validator(mode="after")
+    def validate_dates(self) -> "EventBaseModel":
         """Проверить, что end_date >= start_date.
 
         Returns:
@@ -68,7 +69,7 @@ class EventBaseModel(BaseModel):
             ValueError: Если end_date < start_date.
         """
         if self.end_date and self.end_date < self.start_date:
-            raise ValueError('The end date of the event cannot be earlier than the start date.')
+            raise ValueError("The end date of the event cannot be earlier than the start date.")
         return self
 
 
@@ -77,6 +78,7 @@ class EventCreateModel(EventBaseModel):
 
     Все поля обязательны (наследуется от EventBaseModel).
     """
+
     pass
 
 
@@ -95,25 +97,22 @@ class EventUpdateModel(BaseModel):
         status: Статус события.
         recurrence: Тип повторения.
     """
-    model_config = ConfigDict(
-        populate_by_name=True,
-        from_attributes=True
-    )
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     title: Optional[str] = Field(default=None, min_length=3, max_length=50)
     description: Optional[str] = Field(default=None, min_length=15, max_length=300)
     location: Optional[EventLocationModel] = None
-    start_date: Optional[datetime] = Field(default=None, alias='startDate')
-    end_date: Optional[datetime] = Field(default=None, alias='endDate')
-    max_participants: Optional[int] = Field(default=None, alias='maxParticipants')
+    start_date: Optional[datetime] = Field(default=None, alias="startDate")
+    end_date: Optional[datetime] = Field(default=None, alias="endDate")
+    max_participants: Optional[int] = Field(default=None, alias="maxParticipants")
     status: Optional[EventStatusEnum] = None
     recurrence: Optional[RecurrenceEnum] = None
 
-    @model_validator(mode='after')
-    def validate_dates(self) -> 'EventUpdateModel':
-
-        if self.end_date and self.end_date < self.start_date:               # type: ignore
-            raise ValueError('The end date of the event cannot be earlier than the start date.')
+    @model_validator(mode="after")
+    def validate_dates(self) -> "EventUpdateModel":
+        if self.end_date and self.end_date < self.start_date:  # type: ignore
+            raise ValueError("The end date of the event cannot be earlier than the start date.")
         return self
 
 
@@ -125,11 +124,9 @@ class EventResponseModel(EventBaseModel):
         created_by: MongoDB ObjectId создателя события.
         created_at: Дата и время создания события.
     """
-    model_config = ConfigDict(
-        populate_by_name=True,
-        from_attributes=True
-    )
-    id: PyObjectId = Field(alias='_id')
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+    id: PyObjectId = Field(alias="_id")
     created_by: PyObjectId
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -137,13 +134,14 @@ class EventResponseModel(EventBaseModel):
 class GetEventsModel(BaseModel):
     events: list[EventResponseModel]
 
+
 class EventFilterParams(BaseModel):
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
     status: Optional[EventStatusEnum] = None
     city: Optional[str] = None
     country: Optional[str] = None
-    date_from: Optional[datetime] = Field(default=None, alias='dateFrom')
-    date_to: Optional[datetime] = Field(default=None, alias='dateTo')
+    date_from: Optional[datetime] = Field(default=None, alias="dateFrom")
+    date_to: Optional[datetime] = Field(default=None, alias="dateTo")
     search: Optional[str] = None
-    sort_by: str = Field(default='startDate', alias='sortBy')
-    sort_order: str = Field(default='asc', alias='sortOrder')
+    sort_by: str = Field(default="startDate", alias="sortBy")
+    sort_order: str = Field(default="asc", alias="sortOrder")

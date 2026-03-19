@@ -5,19 +5,20 @@
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, status, HTTPException
+
+from fastapi import FastAPI, HTTPException, status
+
+from app.api.api import main_router
 from app.database import db_client
-from app.dependency_container.users_deps import get_user_collections
-from app.dependency_container.event_deps import (
-    get_events_collection,
-    get_registrations_collection)
 from app.dependency_container.activation_code_deps import get_activation_code_collection
-from app.models.user import UserDAO
+from app.dependency_container.event_deps import get_events_collection, get_registrations_collection
+from app.dependency_container.users_deps import get_user_collections
+from app.middleware.logging import LoggingMiddleware
+from app.models.activation_code import ActivationCodeDAO
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
-from app.models.activation_code import ActivationCodeDAO
-from app.api.api import main_router
-from app.middleware.logging import LoggingMiddleware
+from app.models.user import UserDAO
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,14 +43,10 @@ async def lifespan(app: FastAPI):
     await db_client.close()
 
 
-app = FastAPI(
-    title='EventHub API',
-    version='0.1.0',
-    lifespan=lifespan)  # redirect_slashes=True по умолчанию
+app = FastAPI(title="EventHub API", version="0.1.0", lifespan=lifespan)  # redirect_slashes=True по умолчанию
 
 
-
-@app.get('/health', tags=['System'])
+@app.get("/health", tags=["System"])
 async def health_check():
     """Проверить состояние приложения и базы данных.
 
@@ -62,16 +59,14 @@ async def health_check():
     try:
         await db_client._ping()
         return {
-            'status': 'ok',
-            'components': {
-                'database': 'connected',
-            }
+            "status": "ok",
+            "components": {
+                "database": "connected",
+            },
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f'Database is down: {e}'
-        )
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Database is down: {e}")
+
 
 app.add_middleware(LoggingMiddleware)
-app.include_router(main_router, prefix='/api/v1')
+app.include_router(main_router, prefix="/api/v1")

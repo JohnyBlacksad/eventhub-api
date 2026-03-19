@@ -4,16 +4,17 @@
 получение, обновление, удаление.
 """
 
-from fastapi import status, Depends, APIRouter
-from app.schemas.users import UserResponseModel, UserUpdateModel
+from fastapi import APIRouter, Depends, status
+
 from app.api.deps import get_current_user
-from app.services.user import UserService
 from app.dependency_container.users_deps import get_user_service
+from app.schemas.users import UserResponseModel, UserUpdateModel
+from app.services.user import UserService
 
-user_router = APIRouter(tags=['Users'])
+user_router = APIRouter(tags=["Users"])
 
 
-@user_router.get('/me', response_model=UserResponseModel)
+@user_router.get("/me", response_model=UserResponseModel)
 async def get_user(user: UserResponseModel = Depends(get_current_user)):
     """Получить профиль текущего пользователя.
 
@@ -26,11 +27,11 @@ async def get_user(user: UserResponseModel = Depends(get_current_user)):
     return user
 
 
-@user_router.put('/me', response_model=UserResponseModel)
+@user_router.put("/me", response_model=UserResponseModel)
 async def update_user(
     update_data: UserUpdateModel,
     user: UserResponseModel = Depends(get_current_user),
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
 ):
     """Обновить профиль текущего пользователя.
 
@@ -47,10 +48,9 @@ async def update_user(
     return updated_user
 
 
-@user_router.delete('/me', status_code=status.HTTP_204_NO_CONTENT)
+@user_router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
-    user: UserResponseModel = Depends(get_current_user),
-    user_service: UserService = Depends(get_user_service)
+    user: UserResponseModel = Depends(get_current_user), user_service: UserService = Depends(get_user_service)
 ):
     """Удалить аккаунт текущего пользователя.
 
@@ -67,13 +67,11 @@ async def delete_user(
     await user_service.delete_user(user.id)
     return
 
-@user_router.post('/upgrade', response_model=UserResponseModel)
+
+@user_router.post("/upgrade", response_model=UserResponseModel)
 async def upgrade_role(
     code: str,
     current_user: UserResponseModel = Depends(get_current_user),
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
 ):
-    return await user_service.upgrade_role(
-        user_id=(str(current_user.id)),
-        code_str=code
-    )
+    return await user_service.upgrade_role(user_id=(str(current_user.id)), code_str=code)

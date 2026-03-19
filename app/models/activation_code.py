@@ -4,12 +4,12 @@
 активации роли ORGANIZER.
 """
 
+from datetime import datetime, timezone
 from typing import Optional
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ReturnDocument
-from datetime import datetime, timezone
 
 from app.schemas.activation_code import CodeFiltersResponse
 
@@ -35,10 +35,10 @@ class ActivationCodeDAO:
         Args:
             collection: Коллекция MongoDB для кодов активации.
         """
-        await collection.create_index([('code', 1)], unique=True)
-        await collection.create_index([('activated_by', 1)])
+        await collection.create_index([("code", 1)], unique=True)
+        await collection.create_index([("activated_by", 1)])
 
-    def __build_filter(self, filter_obj = None) -> dict:
+    def __build_filter(self, filter_obj=None) -> dict:
         """Построить MongoDB query из объекта фильтров.
 
         Args:
@@ -52,17 +52,17 @@ class ActivationCodeDAO:
         if not filter_obj:
             return mongo_query
 
-        if getattr(filter_obj, 'is_used', None) is not None:
-            mongo_query['is_used'] = filter_obj.is_used
+        if getattr(filter_obj, "is_used", None) is not None:
+            mongo_query["is_used"] = filter_obj.is_used
 
-        if getattr(filter_obj, 'role', None):
-            mongo_query['role'] = filter_obj.role
+        if getattr(filter_obj, "role", None):
+            mongo_query["role"] = filter_obj.role
 
-        if getattr(filter_obj, 'created_at', None):
-            mongo_query.setdefault('created_at', {})['$gte'] = filter_obj.created_at
+        if getattr(filter_obj, "created_at", None):
+            mongo_query.setdefault("created_at", {})["$gte"] = filter_obj.created_at
 
-        if getattr(filter_obj, 'activated_at', None):
-            mongo_query.setdefault('activated_at', {})['$gte'] = filter_obj.activated_at
+        if getattr(filter_obj, "activated_at", None):
+            mongo_query.setdefault("activated_at", {})["$gte"] = filter_obj.activated_at
 
         return mongo_query
 
@@ -75,20 +75,11 @@ class ActivationCodeDAO:
         Returns:
             Документ кода до обновления, или None если не найден.
         """
-        code = {'code': code_str, 'is_used': False}
+        code = {"code": code_str, "is_used": False}
         filter = {
-            '$set':
-            {
-                'is_used': True,
-                'activated_at': datetime.now(timezone.utc),
-                'activated_by': ObjectId(user_id)
-            }
+            "$set": {"is_used": True, "activated_at": datetime.now(timezone.utc), "activated_by": ObjectId(user_id)}
         }
-        result = await self.collection.find_one_and_update(
-            code,
-            filter,
-            return_document=ReturnDocument.BEFORE
-        )
+        result = await self.collection.find_one_and_update(code, filter, return_document=ReturnDocument.BEFORE)
         return result
 
     async def create_code(self, code_data: dict) -> str:
@@ -100,10 +91,7 @@ class ActivationCodeDAO:
         Returns:
             ID созданного кода в виде строки.
         """
-        code_data.update({
-            'is_used': False,
-            'created_at': datetime.now(timezone.utc)
-        })
+        code_data.update({"is_used": False, "created_at": datetime.now(timezone.utc)})
         result = await self.collection.insert_one(code_data)
         return str(result.inserted_id)
 
@@ -116,7 +104,7 @@ class ActivationCodeDAO:
         Returns:
             True если код удалён, False если не найден.
         """
-        payload = {'_id': ObjectId(code_id)}
+        payload = {"_id": ObjectId(code_id)}
         result = await self.collection.delete_one(payload)
         return result.deleted_count > 0
 
@@ -129,11 +117,13 @@ class ActivationCodeDAO:
         Returns:
             dict | None: Документ кода в виде словаря, или None если не найден.
         """
-        payload = {'_id': ObjectId(code_id)}
+        payload = {"_id": ObjectId(code_id)}
         result = await self.collection.find_one(payload)
         return result
 
-    async def get_codes(self, skip: int = 0, limit: int = 100, filters: Optional[CodeFiltersResponse] = None) -> list[dict]:
+    async def get_codes(
+        self, skip: int = 0, limit: int = 100, filters: Optional[CodeFiltersResponse] = None
+    ) -> list[dict]:
         """Получить список кодов активации с пагинацией и фильтрами.
 
         Args:
@@ -145,10 +135,6 @@ class ActivationCodeDAO:
             list[dict]: Список документов кодов.
         """
         query = self.__build_filter(filter_obj=filters)
-        cursor = (self.collection.find(query)
-                  .sort('created_at', -1)
-                  .skip(skip)
-                  .limit(limit))
+        cursor = self.collection.find(query).sort("created_at", -1).skip(skip).limit(limit)
 
         return await cursor.to_list(length=limit)
-

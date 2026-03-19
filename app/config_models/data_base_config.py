@@ -13,5 +13,6 @@ class MongoDBClient(BaseModel):
         url: URL подключения к MongoDB.
         db_name: Имя базы данных.
     """
+
     url: str
     db_name: str
