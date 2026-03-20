@@ -1,9 +1,17 @@
+"""Фикстуры для DAO тестов EventHub API.
+
+Модуль содержит фикстуры для тестирования DAO слоя:
+- Фикстуры для UserDAO (пользователи, фабрики)
+- Фикстуры для EventDAO (события, фабрики)
+- Фикстуры для RegistrationDAO (регистрации, фабрики)
+- Фикстуры для ActivationCodeDAO (коды активации, фабрики)
+"""
+
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import pytest
 from bson import ObjectId
-from mongomock_motor import AsyncMongoMockCollection
 
 from app.models.activation_code import ActivationCodeDAO
 from app.models.events import EventDAO
@@ -16,67 +24,17 @@ from tests.core.user_data_factory.fake_user_data import faker
 from tests.mock.mongo_mock import get_mongo_mock
 
 
-@pytest.fixture
-def mongo_mock():
-    db = get_mongo_mock()
-    return db
-
-
-@pytest.fixture
-def user_collections(mongo_mock):
-    user_collection = mongo_mock.get_users_collection()
-    return user_collection
-
-
-@pytest.fixture
-def mock_user_dao(user_collections: AsyncMongoMockCollection):
-    return UserDAO(user_collections)
-
-
-@pytest.fixture
-def activation_code_collection(mongo_mock):
-    return mongo_mock.get_activation_codes_collection()
-
-
-@pytest.fixture
-def activation_code_dao(activation_code_collection: AsyncMongoMockCollection):
-    return ActivationCodeDAO(activation_code_collection)
-
-
-@pytest.fixture
-async def setup_indexes_for_activation_code(activation_code_collection: AsyncMongoMockCollection):
-    await ActivationCodeDAO.setup_indexes(activation_code_collection)
-    return activation_code_collection
-
-
-@pytest.fixture
-def registration_collection(mongo_mock):
-    return mongo_mock.get_registrations_collection()
-
-
-@pytest.fixture
-def registration_dao(registration_collection: AsyncMongoMockCollection):
-    return RegistrationDAO(registration_collection)
-
-
-@pytest.fixture
-async def setup_indexes_for_registration(registration_collection: AsyncMongoMockCollection):
-    await RegistrationDAO.setup_indexes(registration_collection)
-    return registration_collection
-
-
-@pytest.fixture
-def event_collection(mongo_mock):
-    return mongo_mock.get_events_collection()
-
-
-@pytest.fixture
-def event_dao(event_collection: AsyncMongoMockCollection):
-    return EventDAO(event_collection)
-
 
 @pytest.fixture
 async def created_user(mock_user_dao: UserDAO):
+    """Создать тестового пользователя и вернуть его из БД.
+
+    Args:
+        mock_user_dao: UserDAO с мок коллекцией.
+
+    Returns:
+        dict: Документ пользователя из БД.
+    """
     user = faker.get_user_register_data_dict()
     create_user_id = await mock_user_dao.create_user(user)
     db_user = await mock_user_dao.get_user_by_id(create_user_id)
@@ -85,6 +43,14 @@ async def created_user(mock_user_dao: UserDAO):
 
 @pytest.fixture
 async def base_users(mock_user_dao: UserDAO):
+    """Создать 10 тестовых пользователей и вернуть UserDAO.
+
+    Args:
+        mock_user_dao: UserDAO с мок коллекцией.
+
+    Returns:
+        UserDAO: DAO объект с созданной группой пользователей.
+    """
     users_list = [faker.get_user_register_data_dict() for _ in range(10)]
     for user in users_list:
         await mock_user_dao.create_user(user)
@@ -137,6 +103,14 @@ async def users_with_different_dates(mock_user_dao: UserDAO) -> dict[str, list |
 
 @pytest.fixture
 async def created_event(event_dao: EventDAO):
+    """Создать тестовое событие и вернуть его из БД.
+
+    Args:
+        event_dao: EventDAO с мок коллекцией.
+
+    Returns:
+        dict: Документ события из БД.
+    """
     event_data = event_faker.get_event_data_dict()
     event_id = await event_dao.create_event(event_data)
     event = await event_dao.get_event(event_id)
@@ -145,7 +119,15 @@ async def created_event(event_dao: EventDAO):
 
 @pytest.fixture
 async def event_factory_for_user(event_dao: EventDAO, created_user):
-    """Фабрика для создания событий у существующего пользователя."""
+    """Фабрика для создания событий у существующего пользователя.
+
+    Args:
+        event_dao: EventDAO с мок коллекцией.
+        created_user: Существующий тестовый пользователь.
+
+    Returns:
+        callable: Асинхронная функция factory(status, count, start_date_days_offset).
+    """
 
     async def aplicate_status_event(status: EventStatusEnum, count: int = 1, start_date_days_offset: int = 0):
         user_id = created_user["_id"]
@@ -173,7 +155,16 @@ async def event_factory_for_user(event_dao: EventDAO, created_user):
 
 @pytest.fixture
 async def created_registration(registration_dao: RegistrationDAO, created_user: dict, created_event: dict):
-    """Создать регистрацию для пользователя на событие."""
+    """Создать регистрацию для пользователя на событие.
+
+    Args:
+        registration_dao: RegistrationDAO с мок коллекцией.
+        created_user: Существующий тестовый пользователь.
+        created_event: Существующее тестовое событие.
+
+    Returns:
+        dict: Документ регистрации из БД.
+    """
     user_id = created_user["_id"]
     event_id = created_event["_id"]
 
@@ -268,7 +259,15 @@ def code_factory_data():
 
 @pytest.fixture
 async def created_activation_code(activation_code_dao: ActivationCodeDAO, code_factory_data):
-    """Создать код активации по умолчанию."""
+    """Создать код активации по умолчанию.
+
+    Args:
+        activation_code_dao: ActivationCodeDAO с мок коллекцией.
+        code_factory_data: Фабрика данных для кода.
+
+    Returns:
+        dict: Документ кода активации из БД.
+    """
     code_data = code_factory_data()
     code_id = await activation_code_dao.create_code(code_data)
     code = await activation_code_dao.get_code(code_id)
