@@ -7,14 +7,15 @@ from app.config import settings
 from app.config_models.auth_config import AuthConfig
 from app.services.auth import AuthService
 from tests.core.auth_data_factory.fake_auth_data import auth_faker
-from tests.core.const.mark_enums import FeaturesAuthMark, MarkTests, ModuleMarks, ServicesMark, tag
+from tests.core.const.mark_enums import FeaturesAuthMark, MarkTests, ModuleMarks, ServicesMark, tag, UnitTag
 
-
+@tag(UnitTag.FAST)
 @tag(MarkTests.UNITS)
 @tag(ModuleMarks.SERVICES)
 @tag(ServicesMark.AUTH)
 @pytest.mark.asyncio
 class TestAuthService:
+
     @allure.title("Проверка возвращения строки в качестве хеша пароля")
     @tag(FeaturesAuthMark.HASH_PASSWORD)
     async def test_hash_password_returns_string(self, auth_service: AuthService):

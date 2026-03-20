@@ -90,11 +90,18 @@ markers = [
     "VERIFY_PASSWORD: Testing verify password logic",
     "CREATE_TOKEN: Testing creating token logic",
     "DECODE_TOKEN: Testing decode token logic",
-    "REFRESH_TOKEN: Testing refresg token logic"
+    "REFRESH_TOKEN: Testing refresg token logic",
+    "SMOKE: Smoke test-case",
+    "REGRESSION: Regression test-case",
+    "SLOW: Slow test-case",
+    "FAST: Fast test-case",
+    "FLAKY: Flaky test-case",
+    "CONCURENCY: Race-condition concurency test-case",
 ]
 
 addopts = [
     "-s",
+    "--allure-no-capture",
     "--cov=app",
     "--cov-report=term-missing",
     "--cov-report=xml:./tests/reports/allure-results/coverage.xml",

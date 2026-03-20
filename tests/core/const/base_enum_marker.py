@@ -22,6 +22,7 @@ class BaseMarkerEnum(Enum):
 
 def _register_all_enums():
     """Принудительно зарегистрировать все enum'ы."""
+    from tests.core.const import mark_enums # noqa: F401
 
 
 _register_all_enums()

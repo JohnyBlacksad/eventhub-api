@@ -5,11 +5,11 @@ from tests.core.const.base_enum_marker import BaseMarkerEnum
 
 class AllureLabelApplier:
     SEVERITY_PRIORITY = {
-        "BLOCKER": 4,
-        "CRITICAL": 3,
-        "NORMAL": 2,
-        "MINOR": 1,
-        "TRIVIAL": 0,
+        "blocker": 4,
+        "critical": 3,
+        "normal": 2,
+        "minor": 1,
+        "trivial": 0,
     }
 
     def __init__(self, default_owner: str = "ADMIN"):
@@ -49,6 +49,10 @@ class AllureLabelApplier:
                 contributions["suite"] = member.suite
             if hasattr(member, "sub_suite") and "sub_suite" not in contributions:
                 contributions["sub_suite"] = member.sub_suite
+
+            # ← ТАГ ДОБАВЛЯЕМ из ЛЮБОГО енума у которого есть атрибут 'tag'
+            if hasattr(member, 'tag'):
+                contributions.setdefault('tags', []).append(member.tag)
 
         return contributions
 
@@ -96,6 +100,7 @@ class AllureLabelApplier:
             "parent_suite": None,
             "suite": None,
             "sub_suite": None,
+            'tags': [],
         }
 
         for mark_name in test_marks:
@@ -119,6 +124,8 @@ class AllureLabelApplier:
                 all_contributions["suite"] = contrib["suite"]
             if contrib.get("sub_suite") and not all_contributions["sub_suite"]:
                 all_contributions["sub_suite"] = contrib["sub_suite"]
+            if contrib.get('tags'):
+                all_contributions['tags'].extend(contrib['tags'])
 
         epic = all_contributions["epic"] or "Unknown Tests"
         layer = all_contributions["layer"] or "unknown"
@@ -148,6 +155,6 @@ class AllureLabelApplier:
         allure.dynamic.description(description)
         allure.dynamic.label("owner", owner)
 
-        for mark_name in test_marks:
-            allure.dynamic.label("test_marker", mark_name)
-            allure.dynamic.tag(mark_name)
+        # ← Добавляем теги из ВСЕХ енумов у которых есть атрибут 'tag'
+        for tag_value in all_contributions['tags']:
+            allure.dynamic.tag(tag_value)

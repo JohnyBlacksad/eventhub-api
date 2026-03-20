@@ -48,7 +48,7 @@ export default defineConfig({
     },
 
     defaultLabels: {
-        severity: "NORMAL",
+        severity: "normal",
         owner: "ADMIN",
         layer: "BACKEND"
     },
@@ -77,7 +77,7 @@ export default defineConfig({
                     {
                         type: "testResultSeverities",
                         title: "Серьёзность тестов",
-                        levels: ["BLOCKER", "CRITICAL", "NORMAL", "MINOR", "TRIVIAL"],
+                        levels: ["blocker", "critical", "normal", "minor", "trivial"],
                         statuses: ["passed", "failed", "broken", "skipped", "unknown"],
                         includeUnset: true
                     },
@@ -137,67 +137,62 @@ export default defineConfig({
         },
 
         // Дополнительный отчёт с группировкой по parentSuite/suite/subSuite
-        "suites-view": {
+        "unit-tests": {
             import: "@allurereport/plugin-awesome",
             options: {
-                reportName: "По сьютам (parentSuite → suite → subSuite)",
+                reportName: "Unit Tests",
                 groupBy: ["parentSuite", "suite", "subSuite"],
                 // charts не указаны — будут использованы значения по умолчанию
                 charts: [
                     {
                         type: "testResultSeverities",
-                        title: "Серьёзность тестов",
-                        levels: ["BLOCKER", "CRITICAL", "NORMAL", "MINOR", "TRIVIAL"],
+                        title: "Серьёзность тестов" ,
+                        levels: ["blocker", "critical", "normal", "minor", "trivial"],
                         statuses: ["passed", "failed", "broken", "skipped", "unknown"],
                         includeUnset: true
                     },
                     {
                         type: "testBaseGrowthDynamics",
                         title: "Динамика количества тестов",
-                        statuses: ["passed", "failed", "broken", "skipped", "unknown"]
-                    },
-                    {
-                        type: "coverageDiff",
-                        title: "Карта покрытия кода"
+                        statuses: ["passed", "failed", "broken", "skipped", "unknown"],
+                        limit: 10
                     },
                     {
                         type: "stabilityDistribution",
                         title: "Стабильность по функционалу",
                         threshold: 90,
                         skipStatuses: ["skipped", "unknown"],
-                        groupBy: "parentSuite"
+                        groupBy: "subSuite"
+                    },
+                    {
+                        type: "durations",
+                        title: "Длительность по сервисам",
+                        groupBy: "subSuite"
+                    },
+                    {
+                        type: "statusDynamics",
+                        title: "Динамика статусов",
+                        limit: 10, // последние 10 прогонов
+                        statuses: ["passed", "failed", "broken", "skipped", "unknown"]
+                    },
+                    {
+                        type: "statusTransitions",
+                        title: "Flaky",
+                        limit: 10
                     }
                 ]
             }
         },
 
-        // Отчёт с группировкой epic → feature → sub_suite (если нужно)
-        "deep-view": {
-            import: "@allurereport/plugin-awesome",
-            options: {
-                reportName: "Глубинная иерархия (epic → feature → sub_suite)",
-                groupBy: ["epic", "feature", "sub_suite"]
-            }
-        },
-
-        // Отчёт только по story
-        "story-view": {
-            import: "@allurereport/plugin-awesome",
-            options: {
-                reportName: "По сториз",
-                groupBy: ["story"]
-            }
-        }
     },
 
     variables: {
         "Environment": "WSL2 / Ubuntu",
         "Python": "3.12",
-        "Layer": "BACKEND",
+        "Layer": "Backend",
         "Framework": "pytest + mongomock-motor",
         "Total Coverage": `${coverage.total_coverage}%`,
         "Branch Coverage": `${coverage.branch_coverage}%`,
-        "Coverage HTML Report": "<a href='coverage-html/index.html' target='_blank'>Открыть</a>",
         "Run Date": new Date().toLocaleString("ru-RU"),
         "Git Branch": process.env.CI_COMMIT_BRANCH || "local",
         "Commit": process.env.CI_COMMIT_SHA?.slice(0, 8) || "local"

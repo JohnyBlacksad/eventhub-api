@@ -41,19 +41,18 @@ class ServicesMark(BaseMarkerEnum):
     ACTIVATION_CODE = "Activation Code Service"
     EVENT_REGISTRATION = "Event Registration Service"
 
-    def __init__(self, feature):
-        self.feature = feature
-        self.sub_suite = feature  #
+    def __init__(self, sub_suite):
+        self.sub_suite = sub_suite  #
 
 
 class FeaturesUserMark(BaseMarkerEnum):
-    CREATE_USER = ("Create User", "BLOCKER")
-    GET_USER = ("Get User", "NORMAL")
-    UPDATE_USER = ("Update User", "NORMAL")
-    DELETE_USER = ("Delete User", "BLOCKER")
-    UPDATE_ROLE = ("Update User Role", "NORMAL")
-    BAN_USER = ("Ban user", "CRITICAL")
-    GET_USERS = ("Get User List", "NORMAL")
+    CREATE_USER = ("Create User", "blocker")
+    GET_USER = ("Get User", "normal")
+    UPDATE_USER = ("Update User", "normal")
+    DELETE_USER = ("Delete User", "blocker")
+    UPDATE_ROLE = ("Update User Role", "normal")
+    BAN_USER = ("Ban user", "critical")
+    GET_USERS = ("Get User List", "normal")
 
     def __init__(self, story, severity):
         self.story = story
@@ -61,7 +60,7 @@ class FeaturesUserMark(BaseMarkerEnum):
 
 
 class DataBaseFunctionMark(BaseMarkerEnum):
-    SETUP_INDEXES = ("Database Indexes", "CRITICAL")
+    SETUP_INDEXES = ("Database Indexes", "critical")
 
     def __init__(self, story, severity):
         self.story = story
@@ -69,13 +68,13 @@ class DataBaseFunctionMark(BaseMarkerEnum):
 
 
 class FeaturesEventMark(BaseMarkerEnum):
-    CREATE_EVENT = ("Create Event", "CRITICAL")
-    GET_EVENT = ("Get Event", "NORMAL")
-    UPDATE_EVENT = ("Update Event", "NORMAL")
-    DELETE_EVENT = ("Delete Event", "CRITICAL")
-    HAS_ACTIVE_EVENT = ("Has Active Event", "MINOR")
-    DELETE_USER_EVENTS = ("Delete User Events", "CRITICAL")
-    GET_EVENTS = ("Get Events List", "NORMAL")
+    CREATE_EVENT = ("Create Event", "critical")
+    GET_EVENT = ("Get Event", "normal")
+    UPDATE_EVENT = ("Update Event", "normal")
+    DELETE_EVENT = ("Delete Event", "critical")
+    HAS_ACTIVE_EVENT = ("Has Active Event", "minor")
+    DELETE_USER_EVENTS = ("Delete User Events", "critical")
+    GET_EVENTS = ("Get Events List", "normal")
 
     def __init__(self, story, severity):
         self.story = story
@@ -83,14 +82,14 @@ class FeaturesEventMark(BaseMarkerEnum):
 
 
 class FeaturesRegistrationMark(BaseMarkerEnum):
-    ADD_REGISTRATION = ("Add Registration", "CRITICAL")
-    REMOVE_REGISTRATION = ("Remove Registration", "CRITICAL")
-    GET_EVENT_REGISTRATIONS = ("Get Event Registrations", "NORMAL")
-    GET_USER_REGISTRATIONS = ("Get User Registrations", "NORMAL")
-    GET_EXISTING_REGISTRATION = ("Get Existing Registration", "NORMAL")
-    DELETE_ALL_REGISTRATIONS_FOR_EVENT = ("Delete All Registrations For Event", "CRITICAL")
-    SET_DELETION_TIME_FOR_EVENT = ("Set Deletion Time For Event", "NORMAL")
-    DELETE_REGISTRATION_BY_USER = ("Delete Registration By User", "CRITICAL")
+    ADD_REGISTRATION = ("Add Registration", "critical")
+    REMOVE_REGISTRATION = ("Remove Registration", "critical")
+    GET_EVENT_REGISTRATIONS = ("Get Event Registrations", "normal")
+    GET_USER_REGISTRATIONS = ("Get User Registrations", "normal")
+    GET_EXISTING_REGISTRATION = ("Get Existing Registration", "normal")
+    DELETE_ALL_REGISTRATIONS_FOR_EVENT = ("Delete All Registrations For Event", "critical")
+    SET_DELETION_TIME_FOR_EVENT = ("Set Deletion Time For Event", "normal")
+    DELETE_REGISTRATION_BY_USER = ("Delete Registration By User", "critical")
 
     def __init__(self, story, severity):
         self.story = story
@@ -98,12 +97,12 @@ class FeaturesRegistrationMark(BaseMarkerEnum):
 
 
 class FeaturesActivationCodeMark(BaseMarkerEnum):
-    CREATE_CODE = ("Create Code", "CRITICAL")
-    GET_CODE = ("Get Code", "NORMAL")
-    GET_CODES = ("Get Codes List", "NORMAL")
-    USE_CODE = ("Use Code", "CRITICAL")
-    DELETE_CODE = ("Delete Code", "CRITICAL")
-    FILTER_CODES = ("Filter Codes", "NORMAL")
+    CREATE_CODE = ("Create Code", "critical")
+    GET_CODE = ("Get Code", "normal")
+    GET_CODES = ("Get Codes List", "normal")
+    USE_CODE = ("Use Code", "critical")
+    DELETE_CODE = ("Delete Code", "critical")
+    FILTER_CODES = ("Filter Codes", "normal")
 
     def __init__(self, story, severity):
         self.story = story
@@ -111,12 +110,24 @@ class FeaturesActivationCodeMark(BaseMarkerEnum):
 
 
 class FeaturesAuthMark(BaseMarkerEnum):
-    HASH_PASSWORD = ("Hash Password", "CRITICAL")
-    VERIFY_PASSWORD = ("Verify Password", "CRITICAL")
-    CREATE_TOKEN = ("Create Token", "CRITICAL")
-    DECODE_TOKEN = ("Decode Token", "CRITICAL")
-    REFRESH_TOKEN = ("Refresh Token", "NORMAL")
+    HASH_PASSWORD = ("Hash Password", "critical")
+    VERIFY_PASSWORD = ("Verify Password", "critical")
+    CREATE_TOKEN = ("Create Token", "critical")
+    DECODE_TOKEN = ("Decode Token", "critical")
+    REFRESH_TOKEN = ("Refresh Token", "normal")
 
     def __init__(self, story, severity):
         self.story = story
         self.severity = severity
+
+
+class UnitTag(BaseMarkerEnum):
+    SMOKE = 'smoke'
+    REGRESSION = 'regression'
+    SLOW = 'slow'
+    FAST = 'fast'
+    FLAKY = 'flaky'
+    CONCURENCY = 'concurency'
+
+    def __init__(self, tag):
+        self.tag = tag
