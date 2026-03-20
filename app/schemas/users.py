@@ -25,7 +25,7 @@ class UserBaseModel(BaseModel):
         first_name: Имя пользователя.
         last_name: Фамилия пользователя.
         phone_number: Номер телефона.
-        role: Роль пользователя (user, admin, manager).
+        role: Роль пользователя (user, organizer, admin).
     """
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)

@@ -17,12 +17,12 @@ class EventDAO:
     и удаления событий в MongoDB.
 
     Атрибуты:
-        collections: Объект коллекции MongoDB для событий.
+        collection: Объект коллекции MongoDB для событий.
     """
 
-    def __init__(self, collections: AsyncIOMotorCollection):
+    def __init__(self, collection: AsyncIOMotorCollection):
         """Инициализация EventDAO с коллекцией events."""
-        self.collections = collections
+        self.collection = collection
 
     @classmethod
     async def setup_indexes(cls, collection: AsyncIOMotorCollection):
@@ -86,7 +86,7 @@ class EventDAO:
         Returns:
             ID созданного события в виде строки.
         """
-        result = await self.collections.insert_one(event_data)
+        result = await self.collection.insert_one(event_data)
         return str(result.inserted_id)
 
     async def get_event(self, event_id: str) -> dict | None:
@@ -99,7 +99,7 @@ class EventDAO:
             Документ события в виде словаря, или None если не найден.
         """
         payload = {"_id": ObjectId(event_id)}
-        result = await self.collections.find_one(payload)
+        result = await self.collection.find_one(payload)
         return result
 
     async def get_events(
@@ -124,7 +124,7 @@ class EventDAO:
 
         direction = ASCENDING if sort_order == "asc" else DESCENDING
 
-        cursor = self.collections.find(query).sort(sort_by, direction).skip(skip).limit(limit)
+        cursor = self.collection.find(query).sort(sort_by, direction).skip(skip).limit(limit)
 
         return await cursor.to_list(length=limit)
 
@@ -139,7 +139,7 @@ class EventDAO:
             Обновлённый документ события, или None если не найден.
         """
         payload = {"_id": ObjectId(event_id)}
-        updated_event = await self.collections.find_one_and_update(
+        updated_event = await self.collection.find_one_and_update(
             payload, {"$set": event_data}, return_document=ReturnDocument.AFTER
         )
         return updated_event
@@ -154,7 +154,7 @@ class EventDAO:
             True если событие удалено, False если не найдено.
         """
         payload = {"_id": ObjectId(event_id)}
-        result = await self.collections.delete_one(payload)
+        result = await self.collection.delete_one(payload)
         return result.deleted_count > 0
 
     async def has_active_events(self, user_id: str) -> bool:
@@ -170,10 +170,10 @@ class EventDAO:
             "created_by": ObjectId(user_id),
             "status": {"$in": [EventStatusEnum.PUBLISHED, EventStatusEnum.PUBLISHED.value, "published"]},
         }
-        result = await self.collections.find_one(query)
+        result = await self.collection.find_one(query)
         return result is not None
 
     async def delete_events_by_user(self, user_id: str) -> bool:
         """Удалить все события пользователя"""
-        result = await self.collections.delete_many({"created_by": ObjectId(user_id)})
+        result = await self.collection.delete_many({"created_by": ObjectId(user_id)})
         return result.deleted_count > 0

@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+"""Quality Gate для проверки покрытия кода.
+
+Скрипт проверяет что покрытие кода соответствует пороговым значениям:
+- Минимальное общее покрытие: 75%
+- Минимальное покрытие требуемых модулей: 50%
+
+Используется в CI/CD для блокировки merge если покрытие ниже порога.
+
+Usage:
+    python quality_gate.py ./tests/reports/allure-results/coverage.xml
+"""
 
 import sys
 from pathlib import Path
@@ -15,6 +26,14 @@ REQUIRED_MODULES = [
 
 
 def run_quality_gate(xml_path: str):
+    """Запустить проверку Quality Gate.
+
+    Args:
+        xml_path: Путь к файлу coverage.xml.
+
+    Raises:
+        SystemExit: Exit code 1 если проверка не пройдена, 0 если пройдена.
+    """
     if not Path(xml_path).exists():
         print(f"Error: File {xml_path} not found")
         sys.exit(1)

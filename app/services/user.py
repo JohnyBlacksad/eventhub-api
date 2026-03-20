@@ -76,6 +76,16 @@ class UserService:
     async def get_users(
         self, skip: int = 0, limit: int = 100, filter_obj: Optional[dict] = None
     ) -> GetUsersResponseModel:
+        """Получить список пользователей с пагинацией и фильтрами.
+
+        Args:
+            skip: Количество пропускаемых записей (для пагинации).
+            limit: Максимальное количество записей (для пагинации).
+            filter_obj: Словарь с фильтрами (role, is_banned, created_at, created_at_to).
+
+        Returns:
+            GetUsersResponseModel: Список пользователей с метаданными.
+        """
         raw_users = await self.user_dao.get_users(skip=skip, limit=limit, filter_obj=filter_obj)
 
         users = [UserResponseModel.model_validate(user, from_attributes=True) for user in raw_users]
@@ -225,8 +235,20 @@ class UserService:
         return UserResponseModel.model_validate(updated_user, from_attributes=True)
 
     async def delete_user_by_admin(self, user_id: str) -> bool:
-        """Удаляет пользователя (Только для ADMIN)"""
+        """Удалить пользователя по ID (только для ADMIN).
 
+        Удаляет пользователя без проверки на активные события.
+        Используется в админских endpoint'ах для cascade удаления.
+
+        Args:
+            user_id: MongoDB ObjectId пользователя.
+
+        Returns:
+            bool: True если пользователь удалён.
+
+        Raises:
+            HTTPException: 404 если пользователь не найден.
+        """
         user = await self.user_dao.get_user_by_id(user_id)
 
         if not user:

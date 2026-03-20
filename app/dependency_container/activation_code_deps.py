@@ -1,3 +1,9 @@
+"""Dependency контейнер для кодов активации.
+
+Модуль содержит функции для внедрения зависимостей (DI)
+через FastAPI Depends для кодов активации.
+"""
+
 from fastapi import Depends
 
 from app.database import db_client

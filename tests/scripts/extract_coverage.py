@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+"""Извлечение покрытия из coverage.xml для Allure Report 3.
+
+Скрипт читает XML отчёт pytest-cov и выводит JSON с метриками:
+- total_coverage: Общее покрытие строк (%)
+- branch_coverage: Покрытие ветвлений (%)
+- packages: Детализация по классам/файлам
+
+Используется в allurerc.mjs (dynamic config) для отображения
+покрытия в переменных Allure отчёта.
+
+Usage:
+    python extract_coverage.py ./tests/reports/allure-results/coverage.xml
+"""
+
 import json
 import sys
 from pathlib import Path

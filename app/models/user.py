@@ -33,12 +33,13 @@ class UserDAO:
         await instance.collection.create_index("email", unique=True)
 
     def __build_filter(self, filter_obj) -> dict:
-        """Внутренний фильтр-маппер: Превращает объект фильтров в запрос к MongoDB
+        """Внутренний фильтр-маппер: Превращает объект фильтров в запрос к MongoDB.
 
-        - filtr_obj: Объект фильтра
+        Args:
+            filter_obj: Объект фильтров (role, is_banned, created_at, created_at_to).
 
-        returns:
-            dict: Словарь с нормализованными данными для передачи в Mongo DB.
+        Returns:
+            dict: Словарь с нормализованными данными для передачи в MongoDB.
         """
         mongo_query = {}
 

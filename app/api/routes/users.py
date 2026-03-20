@@ -74,4 +74,21 @@ async def upgrade_role(
     current_user: UserResponseModel = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service),
 ):
+    """Повысить роль текущего пользователя используя код активации.
+
+    Принимает код активации от администратора и повышает роль пользователя
+    до ORGANIZER (или другой роли указанной в коде).
+
+    Args:
+        code: Строка кода активации.
+        current_user: Данные текущего пользователя (из get_current_user).
+        user_service: Сервис пользователей.
+
+    Returns:
+        UserResponseModel: Обновлённые данные пользователя с новой ролью.
+
+    Raises:
+        HTTPException: 403 если код невалиден, истёк или уже использован.
+        HTTPException: 404 если пользователь не найден.
+    """
     return await user_service.upgrade_role(user_id=(str(current_user.id)), code_str=code)

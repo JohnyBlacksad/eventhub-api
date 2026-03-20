@@ -101,7 +101,6 @@ markers = [
 
 addopts = [
     "-s",
-    "--allure-no-capture",
     "--cov=app",
     "--cov-report=term-missing",
     "--cov-report=xml:./tests/reports/allure-results/coverage.xml",

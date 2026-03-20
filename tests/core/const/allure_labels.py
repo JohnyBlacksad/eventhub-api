@@ -1,3 +1,13 @@
+"""Применение меток Allure к тестам на основе pytest маркеров.
+
+Модуль содержит класс AllureLabelApplier который:
+- Собирает все маркеры с теста
+- Извлекает метаданные (epic, feature, story, severity, suite, tags) из enum'ов
+- Применяет метки динамически через allure.dynamic API
+
+Использует BaseMarkerEnum для автоматической регистрации всех enum'ов с маркерами.
+"""
+
 import allure
 
 from tests.core.const.base_enum_marker import BaseMarkerEnum

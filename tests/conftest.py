@@ -1,8 +1,17 @@
+"""Конфигурация pytest и хуки для проекта EventHub API.
+
+Модуль содержит:
+- Отключение автоматической конвертации маркеров в теги Allure
+- Наследование маркеров с класса на методы
+- Прикрепление данных пользователя/события к отчёту при ошибках
+"""
+
 import traceback
+
 import allure
+import allure_pytest.utils as utils
 import pytest
 from allure_commons.types import AttachmentType
-import allure_pytest.utils as utils
 
 from tests.core.const.allure_labels import AllureLabelApplier
 

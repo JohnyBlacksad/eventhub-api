@@ -337,8 +337,17 @@ class EventService:
         return registrations
 
     async def delete_all_user_events_and_registrations(self, user_id: str) -> bool:
-        """Удаление регистраций и событий пользователя по user_id"""
+        """Удалить все события и регистрации пользователя (cascade удаление).
 
+        Используется при удалении пользователя администратором для очистки
+        всех связанных данных пользователя.
+
+        Args:
+            user_id: MongoDB ObjectId пользователя.
+
+        Returns:
+            bool: True если все события и регистрации удалены.
+        """
         is_registrations_deleted = await self.registration_dao.delete_registration_by_user(user_id)
         is_events_deleted = await self.event_dao.delete_events_by_user(user_id)
 
