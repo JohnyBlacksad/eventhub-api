@@ -41,6 +41,8 @@ class ActivationCodeModelResponse(ActivationCodeBaseModel):
     """Схема для ответа API с данными кода активации.
 
     Атрибуты:
+        code: Строка кода.
+        role: Роль которую даёт код (ORGANIZER, ADMIN).
         id: MongoDB ObjectId кода.
         is_used: Флаг использования кода.
         created_at: Дата и время создания кода.

@@ -14,7 +14,7 @@ from faker import Faker
 from mongomock import ObjectId
 
 from app.schemas.enums.event_enums.event_enums import EventStatusEnum
-from app.schemas.event import EventBaseModel
+from app.schemas.event import EventBaseModel, EventCreateModel
 
 
 class FakeEventData:
@@ -100,10 +100,10 @@ class FakeEventData:
         """Сгенерировать Pydantic модель события.
 
         Returns:
-            EventBaseModel: Модель с случайными данными.
+            EventCreateModel: Модель с случайными данными.
         """
         raw_data = self.get_event_data_dict()
-        return EventBaseModel.model_validate(raw_data, from_attributes=True)
+        return EventCreateModel.model_validate(raw_data, from_attributes=True)
 
 
 event_faker = FakeEventData(Faker("ru_RU"))

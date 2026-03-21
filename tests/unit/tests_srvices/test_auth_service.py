@@ -9,7 +9,6 @@ from app.services.auth import AuthService
 from tests.core.auth_data_factory.fake_auth_data import auth_faker
 from tests.core.const.mark_enums import FeaturesAuthMark, MarkTests, ModuleMarks, ServicesMark, tag, UnitTag
 
-@tag(UnitTag.FAST)
 @tag(MarkTests.UNITS)
 @tag(ModuleMarks.SERVICES)
 @tag(ServicesMark.AUTH)

@@ -119,6 +119,7 @@ class FeaturesUserMark(BaseMarkerEnum):
     UPDATE_ROLE = ("Update User Role", "normal")
     BAN_USER = ("Ban user", "critical")
     GET_USERS = ("Get User List", "normal")
+    AUTH_USER = ('User authorization', 'blocker')
 
     def __init__(self, story, severity):
         self.story = story

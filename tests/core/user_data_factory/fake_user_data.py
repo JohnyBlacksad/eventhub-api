@@ -12,7 +12,7 @@ from bson import ObjectId
 from faker import Faker
 
 from app.schemas.enums.user_enums.users_status import UserRoleEnum
-from app.schemas.users import UserRegisterModel
+from app.schemas.users import UserRegisterModel, UserUpdateModel
 
 
 class FakeUserData:
@@ -43,10 +43,10 @@ class FakeUserData:
             dict: Словарь с данными пользователя (email, firstName, lastName, phoneNumber, password).
         """
         user_data = {
-            "email": self.faker.email(domain="@test.com"),
+            "email": self.faker.email(domain="test.com"),
             "firstName": self.faker.first_name(),
-            "lastName": self.faker.last_name(),
-            "phoneNumber": self.faker.phone_number(),
+            "lastName": self.faker.msisdn(),
+            "phoneNumber": self.faker.numerify('+79#########'),
             "password": self.faker.password(length=12),
         }
 
@@ -62,6 +62,10 @@ class FakeUserData:
         """
         user_reg = self.get_user_register_data_dict()
         return UserRegisterModel.model_validate(user_reg, from_attributes=True)
+
+    def get_update_user_model(self) -> UserUpdateModel:
+        user_data = self.get_user_register_data_dict()
+        return UserUpdateModel.model_validate(user_data, from_attributes=True)
 
     def generate_user_id(self) -> str:
         """Сгенерировать случайный MongoDB ObjectId.

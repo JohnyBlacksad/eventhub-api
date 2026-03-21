@@ -204,6 +204,12 @@ class UserService:
         Raises:
             HTTPException: 403 если код невалиден или уже использован.
         """
+
+        user = await self.user_dao.get_user_by_id(user_id)
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
+
         code_data = await self.code_dao.use_code(code_str, user_id)
 
         if not code_data:

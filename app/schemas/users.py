@@ -4,12 +4,23 @@
 регистрация, логин, профиль, обновление.
 """
 
+import phonenumbers
 from datetime import datetime
 from typing import Annotated, Optional
-
-from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, SecretStr
+from pydantic_core import PydanticCustomError
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    EmailStr,
+    Field,
+    SecretStr,
+    field_validator
+)
 
 from app.schemas.enums.user_enums.users_status import UserRoleEnum
+
+
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
@@ -51,6 +62,27 @@ class UserRegisterModel(BaseModel):
     phone_number: str = Field(..., min_length=7, max_length=15, alias="phoneNumber")
     password: SecretStr = Field(..., min_length=8)
 
+    @field_validator('phone_number')
+    @classmethod
+    def normalize_phone(cls, number: str) -> str:
+        if not number:
+            return number
+
+        try:
+            # Сначала пробуем парсить без региона (считаем, что номер может быть с +)
+            pars = phonenumbers.parse(number, None)
+        except phonenumbers.NumberParseException:
+            try:
+                pars = phonenumbers.parse(number, 'RU')
+            except phonenumbers.NumberParseException:
+                raise ValueError('Invalid phone number format')
+
+        if not phonenumbers.is_valid_number(pars):
+            raise ValueError('Phone number is not valid')
+
+        normalize = phonenumbers.format_number(pars, phonenumbers.PhoneNumberFormat.E164)
+        return normalize
+
 
 class UserLoginModel(BaseModel):
     """Схема для входа пользователя.
@@ -84,6 +116,7 @@ class UserResponseModel(UserBaseModel):
     is_banned: Optional[bool] = Field(default=False, alias="isBanned")
 
 
+
 class UserUpdateModel(BaseModel):
     """Схема для обновления данных пользователя.
 
@@ -98,6 +131,27 @@ class UserUpdateModel(BaseModel):
     phone_number: Optional[str] = Field(default=None, min_length=7, max_length=15, alias="phoneNumber")
     password: Optional[SecretStr] = Field(None, min_length=8)
     # role намеренно исключён — меняется только через admin endpoint
+
+    @field_validator('phone_number')
+    @classmethod
+    def normalize_phone(cls, number: str) -> str:
+        if not number:
+            return number
+
+        try:
+            # Сначала пробуем парсить без региона (считаем, что номер может быть с +)
+            pars = phonenumbers.parse(number, None)
+        except phonenumbers.NumberParseException:
+            try:
+                pars = phonenumbers.parse(number, 'RU')
+            except phonenumbers.NumberParseException:
+                raise ValueError('Invalid phone number format')
+
+        if not phonenumbers.is_valid_number(pars):
+            raise ValueError('Phone number is not valid')
+
+        normalize = phonenumbers.format_number(pars, phonenumbers.PhoneNumberFormat.E164)
+        return normalize
 
 
 class GetUsersResponseModel(BaseModel):
