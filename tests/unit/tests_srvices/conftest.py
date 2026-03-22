@@ -7,6 +7,9 @@
 - ActivationCode сервис (коды активации)
 """
 
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+
 import pytest
 
 from app.config_models.auth_config import AuthConfig
@@ -256,3 +259,89 @@ async def admin_user(user_service: UserService):
     user = await user_service.register_user(user_data)
     admin = await user_service.change_user_role(user.id, UserRoleEnum.ADMIN)
     return admin
+
+@pytest.fixture
+async def event_factory_for_user(event_service: EventService, multiple_users):
+
+    events = []
+    for user in multiple_users:
+        event_data = event_faker.get_create_event_model()
+
+        event = await event_service.create_event(event_data, user.id)
+        events.append(event)
+
+    return events
+
+@pytest.fixture
+async def event_factory(event_service: EventService):
+
+    async def factory(
+            count: int = 1,
+            status_event: Optional[EventStatusEnum] = None,
+            start_date_event: Optional[datetime] = None,
+            end_date_event: Optional[datetime] = None,
+            ):
+        events = []
+        for _ in range(count):
+            event_data = event_faker.get_event_data_dict(
+                status=status_event if status_event else EventStatusEnum.PUBLISHED,
+                start_date=start_date_event if start_date_event else datetime.now(timezone.utc) + timedelta(days=15),
+                end_date=end_date_event if end_date_event else datetime.now(timezone.utc) + timedelta(days=30)
+            )
+            del event_data['created_by']
+            del event_data['created_at']
+            event_model = EventCreateModel.model_validate(event_data, from_attributes=True)
+            user_id = event_faker.generate_random_id()
+            event = await event_service.create_event(event_model, user_id)
+
+            events.append(event)
+
+        return events
+
+    return factory
+
+
+@pytest.fixture
+async def registration_factory(registration_dao: RegistrationDAO, user_factory):
+    """Фабрика для создания регистраций.
+
+    Args:
+        event_id: ID события для регистрации.
+        user_id: ID пользователя (если None, создаётся новый через user_factory).
+
+    Returns:
+        dict: Созданная регистрация.
+    """
+
+    async def factory(event_id: str, user_id: str | None = None, count: int = 1) -> list[dict]:
+        registrations = []
+        for _ in range(count):
+            if user_id is None:
+                user_id = await user_factory()
+
+            await registration_dao.add_registration(event_id, user_id) # type: ignore
+            registration = await registration_dao.get_existing_registration(event_id, user_id) # type: ignore
+
+            assert registration
+
+            registrations.append(registration)
+
+        return registrations
+
+    return factory
+
+@pytest.fixture
+async def user_factory(user_service: UserService):
+    """Фабрика для создания пользователей.
+
+    Returns:
+        str: ID созданного пользователя.
+    """
+
+    async def factory() -> str:
+        from tests.core.user_data_factory.fake_user_data import faker
+        user_data = faker.get_user_register_model()
+        user = await user_service.register_user(user_data)
+        return str(user.id)
+
+    return factory

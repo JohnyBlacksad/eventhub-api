@@ -7,7 +7,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schemas.enums.event_enums.event_enums import EventStatusEnum, RecurrenceEnum
 from app.schemas.users import PyObjectId
@@ -129,6 +129,13 @@ class EventResponseModel(EventBaseModel):
     id: PyObjectId = Field(alias="_id")
     created_by: PyObjectId
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @field_validator("start_date", "end_date", "created_at", mode="before")
+    @classmethod
+    def ensure_utc(cls, value):
+        if isinstance(value, datetime) and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
 
 
 class GetEventsModel(BaseModel):

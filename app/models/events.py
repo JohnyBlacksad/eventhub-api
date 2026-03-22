@@ -3,6 +3,8 @@
 Модуль содержит EventDAO для CRUD операций с событиями в MongoDB.
 """
 
+from datetime import timezone
+
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ASCENDING, DESCENDING, TEXT, ReturnDocument

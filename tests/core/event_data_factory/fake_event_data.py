@@ -103,6 +103,8 @@ class FakeEventData:
             EventCreateModel: Модель с случайными данными.
         """
         raw_data = self.get_event_data_dict()
+        del raw_data['created_by']
+        del raw_data['created_at']
         return EventCreateModel.model_validate(raw_data, from_attributes=True)
 
 

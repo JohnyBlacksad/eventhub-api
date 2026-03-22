@@ -61,7 +61,7 @@ class MarkTests(BaseMarkerEnum):
         self.epic = epic
         self.layer = layer
         self.parent_suite = epic  # Для совместимости
-
+        self.tag = layer #
 
 class ModuleMarks(BaseMarkerEnum):
     """Маркеры слоя архитектуры (feature, suite).
@@ -78,7 +78,7 @@ class ModuleMarks(BaseMarkerEnum):
     def __init__(self, feature):
         self.feature = feature
         self.suite = feature  # Для совместимости
-
+        self.tag = feature #
 
 class ServicesMark(BaseMarkerEnum):
     """Маркеры конкретных сервисов (sub_suite).
@@ -98,7 +98,7 @@ class ServicesMark(BaseMarkerEnum):
 
     def __init__(self, sub_suite):
         self.sub_suite = sub_suite
-
+        self.tag  = sub_suite #
 
 class FeaturesUserMark(BaseMarkerEnum):
     """Маркеры операций с пользователями (story, severity).
@@ -124,6 +124,7 @@ class FeaturesUserMark(BaseMarkerEnum):
     def __init__(self, story, severity):
         self.story = story
         self.severity = severity
+        self.tag  = story
 
 
 class DataBaseFunctionMark(BaseMarkerEnum):
@@ -137,6 +138,7 @@ class DataBaseFunctionMark(BaseMarkerEnum):
     def __init__(self, story, severity):
         self.story = story
         self.severity = severity
+        self.tag  = story
 
 
 class FeaturesEventMark(BaseMarkerEnum):
@@ -162,6 +164,7 @@ class FeaturesEventMark(BaseMarkerEnum):
     def __init__(self, story, severity):
         self.story = story
         self.severity = severity
+        self.tag  = story
 
 
 class FeaturesRegistrationMark(BaseMarkerEnum):
@@ -189,6 +192,7 @@ class FeaturesRegistrationMark(BaseMarkerEnum):
     def __init__(self, story, severity):
         self.story = story
         self.severity = severity
+        self.tag  = story
 
 
 class FeaturesActivationCodeMark(BaseMarkerEnum):
@@ -212,6 +216,7 @@ class FeaturesActivationCodeMark(BaseMarkerEnum):
     def __init__(self, story, severity):
         self.story = story
         self.severity = severity
+        self.tag  = story
 
 
 class FeaturesAuthMark(BaseMarkerEnum):
@@ -233,7 +238,7 @@ class FeaturesAuthMark(BaseMarkerEnum):
     def __init__(self, story, severity):
         self.story = story
         self.severity = severity
-
+        self.tag  = story
 
 class UnitTag(BaseMarkerEnum):
     """Дополнительные теги для тестов.

@@ -78,7 +78,6 @@ class EventService:
             HTTPException: 400 если ID невалиден.
             HTTPException: 404 если событие не найдено.
         """
-        # Валидация ObjectId
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
@@ -86,6 +85,9 @@ class EventService:
 
         if not raw_event:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+        raw_event["_id"] = str(raw_event["_id"])
+        raw_event["created_by"] = str(raw_event["created_by"])
 
         return EventResponseModel.model_validate(raw_event, from_attributes=True)
 
@@ -103,11 +105,11 @@ class EventService:
             list[EventResponseModel]: Список событий.
         """
         raw_event_list = await self.event_dao.get_events(
-            filter_obj=filters,  # type: ignore
+            filter_obj=filters,
             skip=skip,
             limit=limit,
-            sort_by=filters.sort_by,  # type: ignore
-            sort_order=filters.sort_order,  # type: ignore
+            sort_by=filters.sort_by if filters else "startDate",
+            sort_order=filters.sort_order if filters else "asc",
         )
 
         result = [EventResponseModel.model_validate(event, from_attributes=True) for event in raw_event_list]
@@ -134,7 +136,7 @@ class EventService:
         if not current_event:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-        if current_event["created_by"] != user_id:
+        if str(current_event["created_by"]) != user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not the creator of this event")
 
         data = update_data.model_dump(by_alias=True, exclude_none=True)
@@ -150,6 +152,9 @@ class EventService:
                 data["deleted_at"] = None
 
         updated_event = await self.event_dao.update_event(event_id, data)
+
+        updated_event["_id"] = str(updated_event["_id"])
+        updated_event["created_by"] = str(updated_event["created_by"])
 
         return EventResponseModel.model_validate(updated_event, from_attributes=True)
 
