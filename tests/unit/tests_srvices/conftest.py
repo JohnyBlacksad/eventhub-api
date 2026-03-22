@@ -201,6 +201,41 @@ async def created_user_with_event(
 
     return organizer, event
 
+
+@pytest.fixture
+async def created_user_with_limited_event(
+    user_service: UserService,
+    event_service: EventService,
+    created_user
+):
+    """Создать пользователя-организатора с событием с лимитом участников.
+
+    Args:
+        user_service: UserService для операций.
+        event_service: EventService для создания события.
+        created_user: Фикстура с созданным пользователем.
+
+    Returns:
+        tuple[UserResponseModel, dict]: Кортеж (организатор, событие с max_participants=5).
+    """
+    user, *_ = created_user
+
+    organizer = await user_service.change_user_role(
+        user_id=user.id,
+        new_role=UserRoleEnum.ORGANIZER
+    )
+    event_data = event_faker.get_event_data_dict(
+        status=EventStatusEnum.PUBLISHED,
+        max_participants=5
+    )
+
+    event = await event_service.create_event(
+        EventCreateModel.model_validate(event_data, from_attributes=True),
+        organizer.id
+    )
+
+    return organizer, event
+
 @pytest.fixture
 async def organizer_code(code_service: ActivationCodeService):
     """Создать код активации для роли ORGANIZER.
@@ -316,11 +351,11 @@ async def registration_factory(registration_dao: RegistrationDAO, user_factory):
     async def factory(event_id: str, user_id: str | None = None, count: int = 1) -> list[dict]:
         registrations = []
         for _ in range(count):
-            if user_id is None:
-                user_id = await user_factory()
+            # Создаём нового пользователя для каждой регистрации если user_id не указан
+            current_user_id = user_id if user_id else await user_factory()
 
-            await registration_dao.add_registration(event_id, user_id) # type: ignore
-            registration = await registration_dao.get_existing_registration(event_id, user_id) # type: ignore
+            await registration_dao.add_registration(event_id, current_user_id) # type: ignore
+            registration = await registration_dao.get_existing_registration(event_id, current_user_id) # type: ignore
 
             assert registration
 

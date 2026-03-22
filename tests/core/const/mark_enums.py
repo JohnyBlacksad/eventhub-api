@@ -152,6 +152,7 @@ class FeaturesEventMark(BaseMarkerEnum):
         HAS_ACTIVE_EVENT: Проверка активных событий
         DELETE_USER_EVENTS: Удаление событий пользователя
         GET_EVENTS: Получение списка событий
+        EVENT_REGISTRATION: Регистрация на событие
     """
     CREATE_EVENT = ("Create Event", "critical")
     GET_EVENT = ("Get Event", "normal")
@@ -160,6 +161,7 @@ class FeaturesEventMark(BaseMarkerEnum):
     HAS_ACTIVE_EVENT = ("Has Active Event", "minor")
     DELETE_USER_EVENTS = ("Delete User Events", "critical")
     GET_EVENTS = ("Get Events List", "normal")
+    EVENT_REGISTRATION = ("Event Registration", "normal")
 
     def __init__(self, story, severity):
         self.story = story

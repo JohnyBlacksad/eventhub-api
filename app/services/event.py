@@ -177,7 +177,7 @@ class EventService:
         if not current_event:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-        if current_event["created_by"] != user_id:
+        if str(current_event["created_by"]) != user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not the creator of this event")
         await self.registration_dao.delete_all_registrations_for_event(event_id)
         result = await self.event_dao.delete_event(event_id)

@@ -425,3 +425,248 @@ class TestEventService:
                 abs=1
             )
             assert updated_event.created_by == user.id
+
+    @allure.title('Успешное удаление события создателем')
+    @tag(FeaturesEventMark.DELETE_EVENT)
+    async def test_delete_event_success(
+        self,
+        event_service: EventService,
+        created_user_with_event,
+    ):
+
+        user, event = created_user_with_event
+        event_id = event.id
+
+        with allure.step('Запрос на удаление события создателем'):
+            result = await event_service.delete_event(event_id=event_id, user_id=user.id)
+
+        with allure.step('Проверка что возвращается True'):
+            assert result is True
+
+        with allure.step('Проверка что событие удалено из БД'):
+            deleted_event = await event_service.event_dao.get_event(event_id)
+            assert deleted_event is None
+
+    @allure.title('Попытка удаления события не создателем (403)')
+    @tag(FeaturesEventMark.DELETE_EVENT)
+    async def test_delete_event_not_creator(
+        self,
+        event_service: EventService,
+        created_user_with_event,
+        organizer_user,
+    ):
+
+        _, event = created_user_with_event
+        event_id = event.id
+        fake_user_id = organizer_user.id
+
+        with allure.step('Попытка удаления события чужим пользователем'):
+            with pytest.raises(HTTPException) as err:
+                await event_service.delete_event(event_id=event_id, user_id=fake_user_id)
+
+        with allure.step('Проверка что вернулась 403 ошибка'):
+            assert err.value.status_code == 403
+            assert "not the creator" in err.value.detail.lower()
+
+    @allure.title('Удаление несуществующего события (404)')
+    @tag(FeaturesEventMark.DELETE_EVENT)
+    async def test_delete_event_not_found(
+        self,
+        event_service: EventService,
+        organizer_user,
+    ):
+
+        fake_event_id = event_faker.generate_random_id()
+
+        with allure.step('Попытка удаления несуществующего события'):
+            with pytest.raises(HTTPException) as err:
+                await event_service.delete_event(event_id=fake_event_id, user_id=organizer_user.id)
+
+        with allure.step('Проверка что вернулась 404 ошибка'):
+            assert err.value.status_code == 404
+            assert "not found" in err.value.detail.lower()
+
+    @allure.title('Удаление события удаляет все регистрации (cascade)')
+    @tag(FeaturesEventMark.DELETE_EVENT)
+    async def test_delete_event_cascade_registrations(
+        self,
+        event_service: EventService,
+        created_user_with_event,
+        registration_factory,
+    ):
+
+        user, event = created_user_with_event
+        event_id = event.id
+
+        with allure.step('Создание 5 регистраций на событие'):
+            registrations = await registration_factory(event_id=event_id, count=5)
+            assert len(registrations) == 5
+
+        with allure.step('Проверка что регистрации существуют в БД'):
+            event_regs_before = await event_service.registration_dao.get_event_registrations(event_id)
+            assert len(event_regs_before) == 5
+
+        with allure.step('Запрос на удаление события'):
+            result = await event_service.delete_event(event_id=event_id, user_id=user.id)
+
+        with allure.step('Проверка что событие удалено'):
+            assert result is True
+            deleted_event = await event_service.event_dao.get_event(event_id)
+            assert deleted_event is None
+
+        with allure.step('Проверка что все регистрации удалены (cascade)'):
+            event_regs_after = await event_service.registration_dao.get_event_registrations(event_id)
+            assert len(event_regs_after) == 0
+
+    @allure.title('Удаление события администратором (без проверки created_by)')
+    @tag(FeaturesEventMark.DELETE_EVENT)
+    async def test_delete_event_for_admin_success(
+        self,
+        event_service: EventService,
+        created_user_with_event,
+    ):
+
+        _, event = created_user_with_event
+        event_id = event.id
+
+        with allure.step('Запрос на удаление события администратором'):
+            result = await event_service.delete_event_for_admin(event_id=event_id)
+
+        with allure.step('Проверка что возвращается True'):
+            assert result is True
+
+        with allure.step('Проверка что событие удалено из БД'):
+            deleted_event = await event_service.event_dao.get_event(event_id)
+            assert deleted_event is None
+
+    @allure.title('Удаление несуществующего события администратором (404)')
+    @tag(FeaturesEventMark.DELETE_EVENT)
+    async def test_delete_event_for_admin_not_found(
+        self,
+        event_service: EventService,
+    ):
+
+        fake_event_id = event_faker.generate_random_id()
+
+        with allure.step('Попытка удаления несуществующего события администратором'):
+            with pytest.raises(HTTPException) as err:
+                await event_service.delete_event_for_admin(event_id=fake_event_id)
+
+        with allure.step('Проверка что вернулась 404 ошибка'):
+            assert err.value.status_code == 404
+            assert "not found" in err.value.detail.lower()
+
+    @allure.title('Успешная регистрация на событие')
+    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    async def test_register_for_event_success(
+        self,
+        event_service: EventService,
+        created_user_with_event,
+    ):
+        user, event = created_user_with_event
+        event_id = event.id
+        user_id = user.id
+
+        with allure.step('Запрос на регистрацию пользователя на событие'):
+            result = await event_service.register_for_event(event_id=event_id, user_id=user_id)
+
+        with allure.step('Проверка что возвращается статус registered'):
+            assert result == {"status": "registered", "event_id": event_id}
+
+        with allure.step('Проверка что регистрация создана в БД'):
+            registration = await event_service.registration_dao.get_existing_registration(event_id, user_id)
+            assert registration is not None
+            assert str(registration["event_id"]) == event_id
+            assert str(registration["user_id"]) == user_id
+
+    @allure.title('Повторная регистрация на событие (400)')
+    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    async def test_register_for_event_duplicate(
+        self,
+        event_service: EventService,
+        created_user_with_event,
+        registration_factory,
+    ):
+        user, event = created_user_with_event
+        event_id = event.id
+        user_id = user.id
+
+        with allure.step('Создание первой регистрации'):
+            await registration_factory(event_id=event_id, user_id=user_id, count=1)
+
+        with allure.step('Попытка повторной регистрации'):
+            with pytest.raises(HTTPException) as err:
+                await event_service.register_for_event(event_id=event_id, user_id=user_id)
+
+        with allure.step('Проверка что вернулась 400 ошибка'):
+            assert err.value.status_code == 400
+            assert "already registered" in err.value.detail.lower()
+
+    @allure.title('Регистрация на заполненное событие (400)')
+    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    @pytest.mark.xfail(reason="mongomock не поддерживает .limit() корректно для асинхронных курсоров")
+    async def test_register_for_event_full(
+        self,
+        event_service: EventService,
+        created_user_with_limited_event,
+        registration_factory,
+        user_factory,
+    ):
+        _, event = created_user_with_limited_event
+        event_id = event.id
+        max_participants = event.max_participants
+
+        with allure.step(f'Заполнение события на {max_participants - 1} участников'):
+            await registration_factory(event_id=event_id, count=max_participants - 1)
+
+        with allure.step('Попытка регистрации — должна пройти (ещё есть места)'):
+            new_user_id = await user_factory()
+            result = await event_service.register_for_event(event_id=event_id, user_id=new_user_id)
+            assert result["status"] == "registered"
+
+        with allure.step('Попытка регистрации следующего пользователя — должна вызвать ошибку (мест нет)'):
+            another_user_id = await user_factory()
+            with pytest.raises(HTTPException) as err:
+                await event_service.register_for_event(event_id=event_id, user_id=another_user_id)
+
+        with allure.step('Проверка что вернулась 400 ошибка'):
+            assert err.value.status_code == 400
+            assert "full" in err.value.detail.lower()
+
+    @allure.title('Регистрация на несуществующее событие (404)')
+    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    async def test_register_for_event_not_found(
+        self,
+        event_service: EventService,
+        created_user,
+    ):
+        user, *_ = created_user
+        user_id = user.id
+        fake_event_id = event_faker.generate_random_id()
+
+        with allure.step('Попытка регистрации на несуществующее событие'):
+            with pytest.raises(HTTPException) as err:
+                await event_service.register_for_event(event_id=fake_event_id, user_id=user_id)
+
+        with allure.step('Проверка что вернулась 404 ошибка'):
+            assert err.value.status_code == 404
+            assert "not found" in err.value.detail.lower()
+
+    @allure.title('Регистрация с невалидным ID события (400)')
+    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    async def test_register_for_event_invalid_id(
+        self,
+        event_service: EventService,
+        created_user,
+    ):
+        user, *_ = created_user
+        user_id = user.id
+        invalid_event_id = "invalid-object-id"
+
+        with allure.step('Попытка регистрации с невалидным ID события'):
+            with pytest.raises(HTTPException) as err:
+                await event_service.register_for_event(event_id=invalid_event_id, user_id=user_id)
+
+        with allure.step('Проверка что вернулась 400 ошибка'):
+            assert err.value.status_code == 400
+            assert "invalid" in err.value.detail.lower()
