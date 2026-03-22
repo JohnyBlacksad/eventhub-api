@@ -161,7 +161,6 @@ class FeaturesEventMark(BaseMarkerEnum):
     HAS_ACTIVE_EVENT = ("Has Active Event", "minor")
     DELETE_USER_EVENTS = ("Delete User Events", "critical")
     GET_EVENTS = ("Get Events List", "normal")
-    EVENT_REGISTRATION = ("Event Registration", "normal")
 
     def __init__(self, story, severity):
         self.story = story

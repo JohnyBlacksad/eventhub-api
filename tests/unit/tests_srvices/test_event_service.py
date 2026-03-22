@@ -24,6 +24,7 @@ from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 from app.services.event import EventService
 from tests.core.const.mark_enums import (
     FeaturesEventMark,
+    FeaturesRegistrationMark,
     MarkTests,
     ModuleMarks,
     ServicesMark,
@@ -557,7 +558,7 @@ class TestEventService:
             assert "not found" in err.value.detail.lower()
 
     @allure.title('Успешная регистрация на событие')
-    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    @tag(FeaturesRegistrationMark.ADD_REGISTRATION)
     async def test_register_for_event_success(
         self,
         event_service: EventService,
@@ -580,7 +581,7 @@ class TestEventService:
             assert str(registration["user_id"]) == user_id
 
     @allure.title('Повторная регистрация на событие (400)')
-    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    @tag(FeaturesRegistrationMark.ADD_REGISTRATION)
     async def test_register_for_event_duplicate(
         self,
         event_service: EventService,
@@ -603,7 +604,7 @@ class TestEventService:
             assert "already registered" in err.value.detail.lower()
 
     @allure.title('Регистрация на заполненное событие (400)')
-    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    @tag(FeaturesRegistrationMark.ADD_REGISTRATION)
     @pytest.mark.xfail(reason="mongomock не поддерживает .limit() корректно для асинхронных курсоров")
     async def test_register_for_event_full(
         self,
@@ -634,7 +635,7 @@ class TestEventService:
             assert "full" in err.value.detail.lower()
 
     @allure.title('Регистрация на несуществующее событие (404)')
-    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    @tag(FeaturesRegistrationMark.ADD_REGISTRATION)
     async def test_register_for_event_not_found(
         self,
         event_service: EventService,
@@ -653,7 +654,7 @@ class TestEventService:
             assert "not found" in err.value.detail.lower()
 
     @allure.title('Регистрация с невалидным ID события (400)')
-    @tag(FeaturesEventMark.EVENT_REGISTRATION)
+    @tag(FeaturesRegistrationMark.ADD_REGISTRATION)
     async def test_register_for_event_invalid_id(
         self,
         event_service: EventService,
