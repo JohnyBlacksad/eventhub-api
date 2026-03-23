@@ -3,9 +3,9 @@
 Модуль содержит UserService для бизнес-логики пользователей:
 регистрация, аутентификация, CRUD операции.
 """
+import json
 import hashlib
 from datetime import datetime, timezone
-import json
 from typing import Optional
 
 from fastapi import HTTPException, status

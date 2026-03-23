@@ -122,8 +122,9 @@ class CacheService:
         pattern = f'{self.PREFIX_EVENT_LIST}:*'
         keys = []
 
-        async for key in self.redis.scan_iter(pattern):
+        async for key in self.redis.scan_iter(match=pattern):
             keys.append(key)
+
         if keys:
             await self.redis.delete(*keys)
 
@@ -156,7 +157,8 @@ class CacheService:
 
         pattern = f'{self.PREFIX_USER_LIST}:*'
         keys = []
-        async for key in self.redis.scan_iter(pattern):
+
+        async for key in self.redis.scan_iter(match=pattern):
             keys.append(key)
 
         if keys:

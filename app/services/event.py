@@ -3,18 +3,21 @@
 Модуль содержит EventService для бизнес-логики событий:
 создание, чтение, обновление, удаление событий и регистраций.
 """
+
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from bson import ObjectId
 from fastapi import HTTPException, status
+from pydantic import BaseModel
 
-from app.services.cache import cache_service
 from app.config import settings
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
 from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 from app.schemas.event import EventCreateModel, EventFilterParams, EventResponseModel, EventUpdateModel
+from app.services.cache import CacheService, cache_service
 
 
 class EventService:
@@ -28,15 +31,21 @@ class EventService:
         registration_dao: Data Access Object для регистраций.
     """
 
-    def __init__(self, event_dao: EventDAO, registration_dao: RegistrationDAO):
+    def __init__(
+            self,
+            event_dao: EventDAO,
+            registration_dao: RegistrationDAO,
+            cache: Optional[CacheService] = None):
         """Инициализация EventService.
 
         Args:
             event_dao: EventDAO для CRUD операций.
             registration_dao: RegistrationDAO для регистраций.
+            cache: Сервис кэширования.
         """
         self.event_dao = event_dao
         self.registration_dao = registration_dao
+        self.cache = cache or cache_service
 
     async def create_event(self, event_data: EventCreateModel, user_id: str) -> EventResponseModel:
         """Создать новое событие.
@@ -64,6 +73,9 @@ class EventService:
                 detail="Server error. Event not created, please try again later.",
             )
 
+        await self.cache.delete_event(str(new_id))
+        await self.cache.delete_event_list()
+
         return EventResponseModel.model_validate(raw_event, from_attributes=True)
 
     async def get_event(self, event_id: str) -> EventResponseModel:
@@ -79,6 +91,10 @@ class EventService:
             HTTPException: 400 если ID невалиден.
             HTTPException: 404 если событие не найдено.
         """
+        cached = await self.cache.get_event(event_id)
+        if cached:
+            return EventResponseModel.model_validate(cached)
+
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
@@ -90,7 +106,11 @@ class EventService:
         raw_event["_id"] = str(raw_event["_id"])
         raw_event["created_by"] = str(raw_event["created_by"])
 
-        return EventResponseModel.model_validate(raw_event, from_attributes=True)
+        response = EventResponseModel.model_validate(raw_event, from_attributes=True)
+
+        await self.cache.set_event(event_id, response)
+
+        return response
 
     async def get_events(
         self, filters: Optional[EventFilterParams] = None, skip: int = 0, limit: int = 10
@@ -105,6 +125,14 @@ class EventService:
         Returns:
             list[EventResponseModel]: Список событий.
         """
+        filter_data = filters.model_dump_json(by_alias=True) if filters else "no_filters"
+        query_str = f'events:{skip}:{limit}:{filter_data}'
+        filter_hash = hashlib.md5(query_str.encode()).hexdigest()
+
+        cached_events = await self.cache.get_event_list(filter_hash)
+        if cached_events:
+            return [EventResponseModel.model_validate(e) for e in cached_events]
+
         raw_event_list = await self.event_dao.get_events(
             filter_obj=filters,
             skip=skip,
@@ -114,6 +142,8 @@ class EventService:
         )
 
         result = [EventResponseModel.model_validate(event, from_attributes=True) for event in raw_event_list]
+
+        await self.cache.set_events_list(filter_hash, result)
 
         return result
 
@@ -157,6 +187,9 @@ class EventService:
         updated_event["_id"] = str(updated_event["_id"])
         updated_event["created_by"] = str(updated_event["created_by"])
 
+        await self.cache.delete_event(event_id)
+        await self.cache.delete_event_list()
+
         return EventResponseModel.model_validate(updated_event, from_attributes=True)
 
     async def delete_event(self, event_id: str, user_id: str) -> bool:
@@ -182,6 +215,10 @@ class EventService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not the creator of this event")
         await self.registration_dao.delete_all_registrations_for_event(event_id)
         result = await self.event_dao.delete_event(event_id)
+
+        await self.cache.delete_event(event_id)
+        await self.cache.delete_event_list()
+
         return result
 
     async def delete_event_for_admin(self, event_id: str) -> bool:
@@ -206,6 +243,10 @@ class EventService:
 
         await self.registration_dao.delete_all_registrations_for_event(event_id)
         result = await self.event_dao.delete_event(event_id)
+
+        await self.cache.delete_event(event_id)
+        await self.cache.delete_event_list()
+
         return result
 
     async def register_for_event(self, event_id: str, user_id: str) -> dict:
@@ -250,6 +291,9 @@ class EventService:
 
         await self.registration_dao.add_registration(event_id, user_id)
 
+        await self.cache.delete_event(event_id)
+        await self.cache.delete_event_list()
+
         return {"status": "registered", "event_id": event_id}
 
     async def unregister_from_event(self, event_id: str, user_id: str) -> dict:
@@ -281,6 +325,10 @@ class EventService:
         if not result.deleted_count:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Registration not found")
 
+        await self.cache.delete_event(event_id)
+        await self.cache.delete_event_list()
+
+
         return {"status": "unregistered", "event_id": event_id}
 
     async def get_event_participants(self, event_id: str, skip: int = 0, limit: int = 50) -> list[dict]:
@@ -298,7 +346,7 @@ class EventService:
             HTTPException: 400 если ID невалиден.
             HTTPException: 404 если событие не найдено.
         """
-        # Валидация ObjectId
+
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
@@ -309,7 +357,6 @@ class EventService:
 
         participants = await self.registration_dao.get_event_registrations(event_id=event_id, skip=skip, limit=limit)
 
-        # Конвертируем ObjectId в строку для сериализации
         for p in participants:
             if "_id" in p:
                 p["_id"] = str(p["_id"])
@@ -331,7 +378,6 @@ class EventService:
         """
         registrations = await self.registration_dao.get_user_registrations(user_id)
 
-        # Конвертируем ObjectId в строку для сериализации
         for r in registrations:
             if "_id" in r:
                 r["_id"] = str(r["_id"])
@@ -357,6 +403,9 @@ class EventService:
         is_registrations_deleted = await self.registration_dao.delete_registration_by_user(user_id)
         is_events_deleted = await self.event_dao.delete_events_by_user(user_id)
 
+        await self.cache.delete_event_list()
+
         if is_registrations_deleted and is_events_deleted:
             return True
+
         return False
