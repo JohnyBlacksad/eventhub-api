@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.config_models.auth_config import AuthConfig
 from app.config_models.data_base_config import MongoDBClient
 from app.config_models.event_config import EventsConfig
-
+from app.config_models.redis_config import RedisConfig
 
 class Settings(BaseSettings):
     """Настройки приложения.
@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     mongo_db: MongoDBClient
     auth_config: AuthConfig
     events_config: EventsConfig
+    redis_config: RedisConfig
 
 
 settings = Settings()

@@ -1,36 +1,49 @@
-# Poetry / venv
-.venv/
-.venv
-
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Testing
-.pytest_cache/
-.coverage
-reports/
-htmlcov/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+venv/
+ENV/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# Git
-.git/
-
-# Env
-.env
-
-# Tests
-tests/
-
-# Summarys
-summarys/
+*~
 
 # Docker
 *.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Ruff
+.ruff_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Reports
+reports/
+.allure/
+
+# Allure
+allure-report/
+allure-history.jsonl
+tests/reports/allure-results/
+tests/reports/coverage-html/
+
+# Node.js
+node_modules/
+package-lock.json
+
+summarys/

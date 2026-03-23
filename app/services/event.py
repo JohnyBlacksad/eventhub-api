@@ -9,6 +9,7 @@ from typing import Optional
 from bson import ObjectId
 from fastapi import HTTPException, status
 
+from app.services.cache import cache_service
 from app.config import settings
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO

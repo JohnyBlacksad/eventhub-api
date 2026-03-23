@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, status
 
 from app.api.api import main_router
 from app.database import db_client
+from app.redis_client import redis_client
 from app.dependency_container.activation_code_deps import get_activation_code_collection
 from app.dependency_container.event_deps import get_events_collection, get_registrations_collection
 from app.dependency_container.users_deps import get_user_collections
@@ -29,25 +30,23 @@ async def lifespan(app: FastAPI):
     await db_client.connect()
 
     db = db_client.get_db()
+
     if db is None:
         raise RuntimeError("Database connection failed")
 
     await run_migrations(db)
 
-    user_collection = get_user_collections()
-    event_collection = get_events_collection()
-    registrations_collection = get_registrations_collection()
-    activation_code_collection = get_activation_code_collection()
+    await EventDAO.setup_indexes(get_events_collection())
+    await UserDAO.setup_indexes(get_user_collections())
+    await RegistrationDAO.setup_indexes(get_registrations_collection())
+    await ActivationCodeDAO.setup_indexes(get_activation_code_collection())
 
-    await EventDAO.setup_indexes(event_collection)
-    await UserDAO.setup_indexes(user_collection)
-    await RegistrationDAO.setup_indexes(registrations_collection)
-    await ActivationCodeDAO.setup_indexes(activation_code_collection)
+    await redis_client.connect()
 
     yield
 
+    await redis_client.close()
     await db_client.close()
-
 
 app = FastAPI(title="EventHub API", version="0.1.0", lifespan=lifespan)  # redirect_slashes=True по умолчанию
 
@@ -62,16 +61,27 @@ async def health_check():
     Raises:
         HTTPException: Если база данных недоступна (503).
     """
+    components = {'database': 'down', 'redis': 'down'}
     try:
         await db_client._ping()
-        return {
-            "status": "ok",
-            "components": {
-                "database": "connected",
-            },
-        }
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Database is down: {e}")
+        components['database'] = 'connected'
+    except Exception:
+        pass
+
+    try:
+        await redis_client.client.ping() # type: ignore
+        components['redis'] = 'connected'
+    except Exception:
+        pass
+
+    if 'down' in components.values():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={'status': 'unhealthy', 'components': components}
+        )
+
+    return {'status': 'ok', 'components': components}
+
 
 
 app.add_middleware(LoggingMiddleware)
