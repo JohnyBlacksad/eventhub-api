@@ -4,11 +4,13 @@
 и хеширования паролей.
 """
 
-import jwt
 from datetime import datetime, timedelta, timezone
-from passlib.context import CryptContext
+
+import jwt
 from fastapi import HTTPException, status
 from fastapi.concurrency import run_in_threadpool
+from passlib.context import CryptContext
+
 from app.config import settings
 
 
@@ -32,7 +34,7 @@ class AuthService:
         - secret_key: секретный ключ для JWT
         - algorithm: алгоритм подписи (HS256)
         """
-        self.pwd_context = CryptContext(schemes=[settings.auth_config.crypto_schemas], deprecated='auto')
+        self.pwd_context = CryptContext(schemes=[settings.auth_config.crypto_schemas], deprecated="auto")
         self.secret_key = settings.auth_config.secret_key.encode()
         self.algorithm = settings.auth_config.algorithm
 
@@ -49,10 +51,7 @@ class AuthService:
             >>> await auth_service.hash_password("mypassword123")
             '$2b$12$Kx8...9zQ'
         """
-        return await run_in_threadpool(
-            self.pwd_context.hash,
-            password
-        )
+        return await run_in_threadpool(self.pwd_context.hash, password)
 
     async def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Проверить соответствие пароля хешу.
@@ -68,11 +67,7 @@ class AuthService:
             >>> await auth_service.verify_password("mypassword123", "$2b$12$Kx8...9zQ")
             True
         """
-        return await run_in_threadpool(
-            self.pwd_context.verify,
-            plain_password,
-            hashed_password
-        )
+        return await run_in_threadpool(self.pwd_context.verify, plain_password, hashed_password)
 
     async def create_access_token(self, data: dict) -> str:
         """Создать JWT access токен.
@@ -93,13 +88,8 @@ class AuthService:
         """
         to_encode = data.copy()
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.auth_config.access_token_expire_time)
-        to_encode.update({'exp': expire})
-        token = await run_in_threadpool(
-            jwt.encode,
-            to_encode,
-            self.secret_key,
-            algorithm=self.algorithm
-        )
+        to_encode.update({"exp": expire})
+        token = await run_in_threadpool(jwt.encode, to_encode, self.secret_key, algorithm=self.algorithm)
         return token
 
     async def create_refresh_token(self, data: dict) -> str:
@@ -121,13 +111,8 @@ class AuthService:
         """
         to_encode = data.copy()
         expire = datetime.now(timezone.utc) + timedelta(days=settings.auth_config.refresh_token_expire_time)
-        to_encode.update({'exp': expire})
-        refresh_token = await run_in_threadpool(
-            jwt.encode,
-            to_encode,
-            self.secret_key,
-            algorithm=self.algorithm
-        )
+        to_encode.update({"exp": expire})
+        refresh_token = await run_in_threadpool(jwt.encode, to_encode, self.secret_key, algorithm=self.algorithm)
         return refresh_token
 
     async def decode_token(self, token: str) -> dict:
@@ -148,15 +133,10 @@ class AuthService:
             {'user_id': '123', 'email': 'user@example.com', 'exp': 1710234567}
         """
         try:
-            payload = await run_in_threadpool(
-                jwt.decode,
-                token,
-                self.secret_key,
-                algorithms=[self.algorithm]
-            )
+            payload = await run_in_threadpool(jwt.decode, token, self.secret_key, algorithms=[self.algorithm])
             return payload
 
         except jwt.ExpiredSignatureError:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Token expired')
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
         except jwt.InvalidTokenError:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid token')
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")

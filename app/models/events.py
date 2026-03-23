@@ -3,10 +3,13 @@
 Модуль содержит EventDAO для CRUD операций с событиями в MongoDB.
 """
 
+from datetime import timezone
+
 from bson import ObjectId
-from app.database import db_client
 from motor.motor_asyncio import AsyncIOMotorCollection
-from pymongo import ReturnDocument, ASCENDING, TEXT, DESCENDING
+from pymongo import ASCENDING, DESCENDING, TEXT, ReturnDocument
+
+from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 
 
 class EventDAO:
@@ -16,12 +19,12 @@ class EventDAO:
     и удаления событий в MongoDB.
 
     Атрибуты:
-        collections: Объект коллекции MongoDB для событий.
+        collection: Объект коллекции MongoDB для событий.
     """
 
-    def __init__(self, collections: AsyncIOMotorCollection):
+    def __init__(self, collection: AsyncIOMotorCollection):
         """Инициализация EventDAO с коллекцией events."""
-        self.collections = collections
+        self.collection = collection
 
     @classmethod
     async def setup_indexes(cls, collection: AsyncIOMotorCollection):
@@ -37,10 +40,9 @@ class EventDAO:
             collection: Коллекция MongoDB для событий.
         """
         await collection.create_index([("startDate", ASCENDING)])
-        await collection.create_index([('title', TEXT)])
-        await collection.create_index([('location.city', ASCENDING),
-                                       ('status', ASCENDING)])
-        await collection.create_index([('deleted_at', ASCENDING)], expireAfterSeconds=0)
+        await collection.create_index([("title", TEXT)])
+        await collection.create_index([("location.city", ASCENDING), ("status", ASCENDING)])
+        await collection.create_index([("deleted_at", ASCENDING)], expireAfterSeconds=0)
 
     def __build_filter(self, filter_obj) -> dict:
         """Построить MongoDB query из объекта фильтров.
@@ -56,24 +58,24 @@ class EventDAO:
         if not filter_obj:
             return mongo_query
 
-        if getattr(filter_obj, 'status', None):
-            mongo_query['status'] = filter_obj.status
+        if getattr(filter_obj, "status", None):
+            mongo_query["status"] = filter_obj.status
 
-        if getattr(filter_obj, 'city', None):
-            mongo_query['location.city'] = filter_obj.city
+        if getattr(filter_obj, "city", None):
+            mongo_query["location.city"] = filter_obj.city
 
-        if getattr(filter_obj, 'country', None):
-            mongo_query['location.country'] = filter_obj.country
+        if getattr(filter_obj, "country", None):
+            mongo_query["location.country"] = filter_obj.country
 
-        if getattr(filter_obj, 'date_from', None) or getattr(filter_obj, 'date_to', None):
-            mongo_query['startDate'] = {}
+        if getattr(filter_obj, "date_from", None) or getattr(filter_obj, "date_to", None):
+            mongo_query["startDate"] = {}
             if filter_obj.date_from:
-                mongo_query['startDate']['$gte'] = filter_obj.date_from
+                mongo_query["startDate"]["$gte"] = filter_obj.date_from
             if filter_obj.date_to:
-                mongo_query['startDate']['$lte'] = filter_obj.date_to
+                mongo_query["startDate"]["$lte"] = filter_obj.date_to
 
-        if getattr(filter_obj, 'search', None):
-            mongo_query['$text'] = {'$search': filter_obj.search}
+        if getattr(filter_obj, "search", None):
+            mongo_query["$text"] = {"$search": filter_obj.search}
 
         return mongo_query
 
@@ -86,7 +88,7 @@ class EventDAO:
         Returns:
             ID созданного события в виде строки.
         """
-        result = await self.collections.insert_one(event_data)
+        result = await self.collection.insert_one(event_data)
         return str(result.inserted_id)
 
     async def get_event(self, event_id: str) -> dict | None:
@@ -98,17 +100,17 @@ class EventDAO:
         Returns:
             Документ события в виде словаря, или None если не найден.
         """
-        payload = {'_id': ObjectId(event_id)}
-        result = await self.collections.find_one(payload)
+        payload = {"_id": ObjectId(event_id)}
+        result = await self.collection.find_one(payload)
         return result
 
     async def get_events(
-            self,
-            filter_obj = None,  # type: ignore
-            skip: int = 0,
-            limit: int = 10,
-            sort_by: str = 'startDate',
-            sort_order: str = 'asc'
+        self,
+        filter_obj=None,  # type: ignore
+        skip: int = 0,
+        limit: int = 10,
+        sort_by: str = "startDate",
+        sort_order: str = "asc",
     ) -> list[dict]:
         """Получить список событий с пагинацией.
 
@@ -122,17 +124,11 @@ class EventDAO:
         """
         query = self.__build_filter(filter_obj)
 
-        direction = ASCENDING if sort_order == 'asc' else DESCENDING
+        direction = ASCENDING if sort_order == "asc" else DESCENDING
 
-        cursor = (self.collections
-                  .find(query)
-                  .sort(sort_by, direction)
-                  .skip(skip)
-                  .limit(limit)
-                )
+        cursor = self.collection.find(query).sort(sort_by, direction).skip(skip).limit(limit)
 
         return await cursor.to_list(length=limit)
-
 
     async def update_event(self, event_id: str, event_data: dict):
         """Обновить данные события по ID.
@@ -144,11 +140,9 @@ class EventDAO:
         Returns:
             Обновлённый документ события, или None если не найден.
         """
-        payload = {'_id': ObjectId(event_id)}
-        updated_event = await self.collections.find_one_and_update(
-            payload,
-            {'$set': event_data},
-            return_document=ReturnDocument.AFTER
+        payload = {"_id": ObjectId(event_id)}
+        updated_event = await self.collection.find_one_and_update(
+            payload, {"$set": event_data}, return_document=ReturnDocument.AFTER
         )
         return updated_event
 
@@ -161,8 +155,8 @@ class EventDAO:
         Returns:
             True если событие удалено, False если не найдено.
         """
-        payload = {'_id': ObjectId(event_id)}
-        result = await self.collections.delete_one(payload)
+        payload = {"_id": ObjectId(event_id)}
+        result = await self.collection.delete_one(payload)
         return result.deleted_count > 0
 
     async def has_active_events(self, user_id: str) -> bool:
@@ -175,15 +169,13 @@ class EventDAO:
             True если есть активные события, False иначе.
         """
         query = {
-            'created_by': ObjectId(user_id),
-            'status': {'$in': ['published']}
+            "created_by": ObjectId(user_id),
+            "status": {"$in": [EventStatusEnum.PUBLISHED, EventStatusEnum.PUBLISHED.value, "published"]},
         }
-        result = await self.collections.find_one(query)
+        result = await self.collection.find_one(query)
         return result is not None
 
     async def delete_events_by_user(self, user_id: str) -> bool:
-        '''Удалить все события пользователя'''
-        result = await self.collections.delete_many(
-            {'created_by': ObjectId(user_id)}
-        )
+        """Удалить все события пользователя"""
+        result = await self.collection.delete_many({"created_by": ObjectId(user_id)})
         return result.deleted_count > 0

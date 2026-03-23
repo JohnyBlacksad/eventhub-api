@@ -4,11 +4,10 @@
 Логгирует в JSON формате для совместимости с Loki.
 """
 
+import json
 import logging
 import sys
-import json
 from typing import Any
-
 
 
 class JSONFormatter(logging.Formatter):
@@ -35,11 +34,29 @@ class JSONFormatter(logging.Formatter):
         }
 
         skip_attrs = {
-            'name', 'msg', 'args', 'created', 'filename', 'funcName',
-            'levelname', 'levelno', 'lineno', 'module', 'msecs',
-            'pathname', 'process', 'processName', 'relativeCreated',
-            'stack_info', 'exc_info', 'exc_text', 'thread', 'threadName',
-            'message', 'asctime', 'logger'
+            "name",
+            "msg",
+            "args",
+            "created",
+            "filename",
+            "funcName",
+            "levelname",
+            "levelno",
+            "lineno",
+            "module",
+            "msecs",
+            "pathname",
+            "process",
+            "processName",
+            "relativeCreated",
+            "stack_info",
+            "exc_info",
+            "exc_text",
+            "thread",
+            "threadName",
+            "message",
+            "asctime",
+            "logger",
         }
 
         for key, value in record.__dict__.items():
@@ -47,11 +64,12 @@ class JSONFormatter(logging.Formatter):
                 log_data[key] = value
 
         if record.exc_info:
-            log_data['exc_info'] = self.formatException(record.exc_info)
+            log_data["exc_info"] = self.formatException(record.exc_info)
 
         return json.dumps(log_data)
 
-def setup_logger(name: str = 'eventhub', level: int = logging.INFO) -> logging.Logger:
+
+def setup_logger(name: str = "eventhub", level: int = logging.INFO) -> logging.Logger:
     """
     Настроить логгер с JSON форматтером.
 

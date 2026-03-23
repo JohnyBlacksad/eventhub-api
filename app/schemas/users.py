@@ -4,16 +4,23 @@
 регистрация, логин, профиль, обновление.
 """
 
+import phonenumbers
+from datetime import datetime
+from typing import Annotated, Optional
+from pydantic_core import PydanticCustomError
 from pydantic import (
     BaseModel,
+    BeforeValidator,
+    ConfigDict,
     EmailStr,
     Field,
-    ConfigDict,
     SecretStr,
-    BeforeValidator)
+    field_validator
+)
+
 from app.schemas.enums.user_enums.users_status import UserRoleEnum
-from datetime import datetime, timezone
-from typing import Annotated, Optional
+
+
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
@@ -29,28 +36,16 @@ class UserBaseModel(BaseModel):
         first_name: Имя пользователя.
         last_name: Фамилия пользователя.
         phone_number: Номер телефона.
-        role: Роль пользователя (user, admin, manager).
+        role: Роль пользователя (user, organizer, admin).
     """
+
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
     email: Optional[EmailStr] = None
-    first_name: Optional[str] = Field(
-        default=None,
-        min_length=2,
-        alias='firstName'
-    )
-    last_name: Optional[str] = Field(
-        default=None,
-        min_length=2,
-        alias='lastName'
-    )
-    phone_number: Optional[str] = Field(
-        default=None,
-        min_length=7,
-        max_length=15,
-        alias='phoneNumber'
-    )
+    first_name: Optional[str] = Field(default=None, min_length=2, alias="firstName")
+    last_name: Optional[str] = Field(default=None, min_length=2, alias="lastName")
+    phone_number: Optional[str] = Field(default=None, min_length=7, max_length=15, alias="phoneNumber")
     role: Optional[UserRoleEnum] = None
-    is_banned: Optional[bool] = Field(default=False, alias='isBanned')
+    is_banned: Optional[bool] = Field(default=False, alias="isBanned")
 
 
 class UserRegisterModel(BaseModel):
@@ -59,12 +54,34 @@ class UserRegisterModel(BaseModel):
     Все поля обязательны. Email должен быть уникальным.
     Роль устанавливается автоматически (user).
     """
+
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
-    email: EmailStr                                                 # type: ignore
-    first_name: str = Field(..., min_length=2, alias='firstName')   # type: ignore
-    last_name: str = Field(..., min_length=2, alias='lastName')     # type: ignore
-    phone_number: str = Field(..., min_length=7, max_length=15, alias='phoneNumber')
+    email: EmailStr  # type: ignore
+    first_name: str = Field(..., min_length=2, alias="firstName")  # type: ignore
+    last_name: str = Field(..., min_length=2, alias="lastName")  # type: ignore
+    phone_number: str = Field(..., min_length=7, max_length=15, alias="phoneNumber")
     password: SecretStr = Field(..., min_length=8)
+
+    @field_validator('phone_number')
+    @classmethod
+    def normalize_phone(cls, number: str) -> str:
+        if not number:
+            return number
+
+        try:
+            # Сначала пробуем парсить без региона (считаем, что номер может быть с +)
+            pars = phonenumbers.parse(number, None)
+        except phonenumbers.NumberParseException:
+            try:
+                pars = phonenumbers.parse(number, 'RU')
+            except phonenumbers.NumberParseException:
+                raise ValueError('Invalid phone number format')
+
+        if not phonenumbers.is_valid_number(pars):
+            raise ValueError('Phone number is not valid')
+
+        normalize = phonenumbers.format_number(pars, phonenumbers.PhoneNumberFormat.E164)
+        return normalize
 
 
 class UserLoginModel(BaseModel):
@@ -74,6 +91,7 @@ class UserLoginModel(BaseModel):
         email: Email адрес пользователя.
         password: Пароль пользователя.
     """
+
     email: EmailStr
     password: SecretStr
 
@@ -88,13 +106,15 @@ class UserResponseModel(UserBaseModel):
         last_name: Фамилия пользователя.
         created_at: Дата и время создания аккаунта.
     """
-    id: PyObjectId = Field(alias='_id')
-    email: EmailStr                                                 # type: ignore
-    first_name: Optional[str] = Field(default=None, alias='firstName')
-    last_name: Optional[str] = Field(default=None, alias='lastName')
+
+    id: PyObjectId = Field(alias="_id")
+    email: EmailStr  # type: ignore
+    first_name: Optional[str] = Field(default=None, alias="firstName")
+    last_name: Optional[str] = Field(default=None, alias="lastName")
     created_at: datetime
     role: Optional[UserRoleEnum] = UserRoleEnum.USER
-    is_banned: Optional[bool] = Field(default=False, alias='isBanned')
+    is_banned: Optional[bool] = Field(default=False, alias="isBanned")
+
 
 
 class UserUpdateModel(BaseModel):
@@ -103,24 +123,45 @@ class UserUpdateModel(BaseModel):
     Все поля опциональны. Обновляются только указанные поля.
     Роль нельзя изменить через этот endpoint (только через admin).
     """
+
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
     email: Optional[EmailStr] = Field(default=None)
-    first_name: Optional[str] = Field(default=None, min_length=2, alias='firstName')
-    last_name: Optional[str] = Field(default=None, min_length=2, alias='lastName')
-    phone_number: Optional[str] = Field(default=None, min_length=7, max_length=15, alias='phoneNumber')
+    first_name: Optional[str] = Field(default=None, min_length=2, alias="firstName")
+    last_name: Optional[str] = Field(default=None, min_length=2, alias="lastName")
+    phone_number: Optional[str] = Field(default=None, min_length=7, max_length=15, alias="phoneNumber")
     password: Optional[SecretStr] = Field(None, min_length=8)
     # role намеренно исключён — меняется только через admin endpoint
+
+    @field_validator('phone_number')
+    @classmethod
+    def normalize_phone(cls, number: str) -> str:
+        if not number:
+            return number
+
+        try:
+            # Сначала пробуем парсить без региона (считаем, что номер может быть с +)
+            pars = phonenumbers.parse(number, None)
+        except phonenumbers.NumberParseException:
+            try:
+                pars = phonenumbers.parse(number, 'RU')
+            except phonenumbers.NumberParseException:
+                raise ValueError('Invalid phone number format')
+
+        if not phonenumbers.is_valid_number(pars):
+            raise ValueError('Phone number is not valid')
+
+        normalize = phonenumbers.format_number(pars, phonenumbers.PhoneNumberFormat.E164)
+        return normalize
+
 
 class GetUsersResponseModel(BaseModel):
     users: list[UserResponseModel]
 
+
 class UserFilterModel(BaseModel):
-    model_config = ConfigDict(
-        populate_by_name=True,
-        from_attributes=True
-    )
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     role: Optional[str] = None
-    is_banned: Optional[bool] = Field(default=None, alias='isBanned')
-    created_at: Optional[datetime] = Field(default=None, alias='createdAt')
-    created_at_to: Optional[datetime] = Field(default=None, alias='createdAtTo')
+    is_banned: Optional[bool] = Field(default=None, alias="isBanned")
+    created_at: Optional[datetime] = Field(default=None, alias="createdAt")
+    created_at_to: Optional[datetime] = Field(default=None, alias="createdAtTo")

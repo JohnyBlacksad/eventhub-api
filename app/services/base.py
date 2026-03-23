@@ -2,12 +2,13 @@
 
 Модуль содержит базовый класс для сервисов с общими утилитами.
 """
+from typing import TypeVar
+
 from bson import ObjectId
 from fastapi import HTTPException, status
-from typing import TypeVar, Generic
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BaseService:
@@ -17,11 +18,7 @@ class BaseService:
     """
 
     @staticmethod
-    async def get_or_404(
-        collection: AsyncIOMotorCollection,
-        entity_id: str,
-        entity_type: str = 'Entity'
-    ) -> dict:
+    async def get_or_404(collection: AsyncIOMotorCollection, entity_id: str, entity_type: str = "Entity") -> dict:
         """Получить сущность по ID или выбросить 404.
 
         Args:
@@ -36,14 +33,10 @@ class BaseService:
             HTTPException: 404 если сущность не найдена.
         """
 
-
-        entity = await collection.find_one({'_id': ObjectId(entity_id)})
+        entity = await collection.find_one({"_id": ObjectId(entity_id)})
 
         if not entity:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f'{entity_type} not found'
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{entity_type} not found")
 
         return entity
 

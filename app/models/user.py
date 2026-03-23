@@ -4,8 +4,9 @@
 """
 
 from bson import ObjectId
-from pymongo import ReturnDocument
 from motor.motor_asyncio import AsyncIOMotorCollection
+from pymongo import ReturnDocument
+
 
 class UserDAO:
     """Data Access Object для коллекции пользователей.
@@ -29,32 +30,33 @@ class UserDAO:
         дублирования пользователей.
         """
         instance = cls(collection)
-        await instance.collection.create_index('email', unique=True)
+        await instance.collection.create_index("email", unique=True)
 
     def __build_filter(self, filter_obj) -> dict:
-        '''Внутренний фильтр-маппер: Превращает объект фильтров в запрос к MongoDB
+        """Внутренний фильтр-маппер: Превращает объект фильтров в запрос к MongoDB.
 
-        - filtr_obj: Объект фильтра
+        Args:
+            filter_obj: Объект фильтров (role, is_banned, created_at, created_at_to).
 
-        returns:
-            dict: Словарь с нормализованными данными для передачи в Mongo DB.
-        '''
+        Returns:
+            dict: Словарь с нормализованными данными для передачи в MongoDB.
+        """
         mongo_query = {}
 
         if not filter_obj:
             return mongo_query
 
-        if getattr(filter_obj, 'role', None):
-            mongo_query['role'] = filter_obj.role
+        if getattr(filter_obj, "role", None):
+            mongo_query["role"] = filter_obj.role
 
-        if getattr(filter_obj, 'is_banned', None):
-            mongo_query['is_banned'] = filter_obj.is_banned
+        if getattr(filter_obj, "is_banned", None):
+            mongo_query["is_banned"] = filter_obj.is_banned
 
-        if getattr(filter_obj, 'created_at', None):
-            mongo_query.setdefault('created_at', {})['$gte'] = filter_obj.created_at
+        if getattr(filter_obj, "created_at", None):
+            mongo_query.setdefault("created_at", {})["$gte"] = filter_obj.created_at
 
-        if getattr(filter_obj, 'created_at_to', None):
-            mongo_query.setdefault('created_at', {})['$lte'] = filter_obj.created_at_to
+        if getattr(filter_obj, "created_at_to", None):
+            mongo_query.setdefault("created_at", {})["$lte"] = filter_obj.created_at_to
 
         return mongo_query
 
@@ -71,7 +73,7 @@ class UserDAO:
         result = await self.collection.insert_one(user_data)
         return str(result.inserted_id)
 
-    async def get_users(self, skip: int = 0, limit: int = 0, filter_obj = None) -> list[dict]:
+    async def get_users(self, skip: int = 0, limit: int = 0, filter_obj=None) -> list[dict]:
         """Получить список пользователей с пагинацией и фильтрами.
 
         Args:
@@ -83,10 +85,7 @@ class UserDAO:
             list[dict]: Список документов пользователей.
         """
         query = self.__build_filter(filter_obj)
-        cursor = (self.collection
-                  .find(query)
-                  .skip(skip)
-                  .limit(limit))
+        cursor = self.collection.find(query).skip(skip).limit(limit)
 
         return await cursor.to_list(length=limit)
 
@@ -99,7 +98,7 @@ class UserDAO:
         Returns:
             Документ пользователя в виде словаря, или None если не найден.
         """
-        query_filter = {'_id': ObjectId(user_id)}
+        query_filter = {"_id": ObjectId(user_id)}
         result = await self.collection.find_one(query_filter)
         return result
 
@@ -112,7 +111,7 @@ class UserDAO:
         Returns:
             Документ пользователя в виде словаря, или None если не найден.
         """
-        query_filter = {'email': email}
+        query_filter = {"email": email}
         result = await self.collection.find_one(query_filter)
         return result
 
@@ -126,11 +125,10 @@ class UserDAO:
         Returns:
             Обновлённый документ пользователя, или None если не найден.
         """
-        query_filter = {'_id': ObjectId(user_id)}
+        query_filter = {"_id": ObjectId(user_id)}
         updated_user = await self.collection.find_one_and_update(
-            query_filter,
-            {'$set': update_data},
-            return_document=ReturnDocument.AFTER)
+            query_filter, {"$set": update_data}, return_document=ReturnDocument.AFTER
+        )
         return updated_user
 
     async def delete_user(self, user_id: str):
@@ -142,7 +140,7 @@ class UserDAO:
         Returns:
             True если пользователь удалён, False если не найден.
         """
-        query_filter = {'_id': ObjectId(user_id)}
+        query_filter = {"_id": ObjectId(user_id)}
         result = await self.collection.delete_one(query_filter)
         return result.deleted_count > 0
 
@@ -157,9 +155,7 @@ class UserDAO:
             Обновлённый документ пользователя.
         """
         result = await self.collection.find_one_and_update(
-            {'_id': ObjectId(user_id)},
-            {'$set': {'role': new_role}},
-            return_document=ReturnDocument.AFTER
+            {"_id": ObjectId(user_id)}, {"$set": {"role": new_role}}, return_document=ReturnDocument.AFTER
         )
         return result
 
@@ -174,9 +170,7 @@ class UserDAO:
             Обновлённый документ пользователя.
         """
         result = await self.collection.find_one_and_update(
-            {'_id': ObjectId(user_id)},
-            {'$set': {'is_banned': is_banned}},
-            return_document=ReturnDocument.AFTER
+            {"_id": ObjectId(user_id)}, {"$set": {"is_banned": is_banned}}, return_document=ReturnDocument.AFTER
         )
 
         return result

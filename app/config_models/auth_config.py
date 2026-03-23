@@ -16,6 +16,7 @@ class AuthConfig(BaseModel):
         access_token_expire_time: Время жизни access токена (минуты).
         refresh_token_expire_time: Время жизни refresh токена (дни).
     """
+
     crypto_schemas: str
     secret_key: str
     algorithm: str

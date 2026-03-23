@@ -13,6 +13,7 @@ class UserRoleEnum(StrEnum):
         USER: Обычный пользователь.
         ADMIN: Администратор с расширенными правами.
     """
-    USER = 'user'
-    ADMIN = 'admin'
-    ORGANIZER = 'organizer'
+
+    USER = "user"
+    ADMIN = "admin"
+    ORGANIZER = "organizer"

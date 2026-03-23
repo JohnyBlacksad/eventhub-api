@@ -5,12 +5,10 @@
 """
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from app.dependency_container.users_deps import get_auth_service, get_user_service
 from app.schemas.enums.user_enums.users_status import UserRoleEnum
-from app.dependency_container.users_deps import (
-    get_auth_service,
-    get_user_service
-)
 from app.schemas.users import UserResponseModel
 from app.services.auth import AuthService
 from app.services.user import UserService
@@ -19,9 +17,9 @@ oauth2_scheme = HTTPBearer()
 
 
 async def get_current_user(
-        token: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
-        auth_service: AuthService = Depends(get_auth_service),
-        user_service: UserService = Depends(get_user_service),
+    token: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
+    auth_service: AuthService = Depends(get_auth_service),
+    user_service: UserService = Depends(get_user_service),
 ):
     """Получить текущего пользователя из JWT токена.
 
@@ -42,30 +40,21 @@ async def get_current_user(
     """
     payload = await auth_service.decode_token(token.credentials)
 
-    user_id = payload.get('user_id')
+    user_id = payload.get("user_id")
     if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Invalid token payload'
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
     user = await user_service.get_user_by_id(user_id)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='User not found'
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     if user.is_banned:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='Your account is banned'
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is banned")
 
     return user
 
-async def require_role(
-        current_user: UserResponseModel = Depends(get_current_user)):
+
+async def require_role(current_user: UserResponseModel = Depends(get_current_user)):
     """Проверить роль текущего пользователя (ORGANIZER или ADMIN).
 
     Args:
@@ -78,16 +67,12 @@ async def require_role(
         HTTPException: 403 если роль не ORGANIZER и не ADMIN.
     """
     if current_user.role not in (UserRoleEnum.ORGANIZER, UserRoleEnum.ADMIN):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f'Role {current_user.role} is not allowed.'
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Role {current_user.role} is not allowed.")
 
     return current_user
 
 
-async def require_admin(
-        current_user: UserResponseModel = Depends(get_current_user)):
+async def require_admin(current_user: UserResponseModel = Depends(get_current_user)):
     """Проверить роль текущего пользователя (только ADMIN).
 
     Args:
@@ -100,9 +85,6 @@ async def require_admin(
         HTTPException: 403 если роль не ADMIN.
     """
     if current_user.role != UserRoleEnum.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='Admin access required'
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     return current_user

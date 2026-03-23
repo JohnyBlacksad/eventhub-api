@@ -4,7 +4,8 @@
 access токен, refresh токен, данные токена.
 """
 
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
 from app.schemas.users import PyObjectId
 
 
@@ -18,10 +19,11 @@ class TokenModel(BaseModel):
         refresh_token: JWT refresh токен.
         token_type: Тип токена (bearer).
     """
+
     model_config = ConfigDict(populate_by_name=True)
-    access_token: str = Field(alias='accessToken')
-    refresh_token: str = Field(alias='refreshToken')
-    token_type: str = Field(default='bearer', alias='tokenType')
+    access_token: str = Field(alias="accessToken")
+    refresh_token: str = Field(alias="refreshToken")
+    token_type: str = Field(default="bearer", alias="tokenType")
 
 
 class TokenDataModel(BaseModel):
@@ -33,9 +35,11 @@ class TokenDataModel(BaseModel):
         user_id: MongoDB ObjectId пользователя.
         email: Email адрес пользователя.
     """
+
     model_config = ConfigDict(populate_by_name=True)
-    user_id: PyObjectId = Field(alias='userId')
+    user_id: PyObjectId = Field(alias="userId")
     email: EmailStr
+
 
 class RefreshTokenModel(BaseModel):
     """Схема для запроса обновления токенов.
@@ -43,4 +47,5 @@ class RefreshTokenModel(BaseModel):
     Атрибуты:
         refresh_token: JWT refresh токен для получения новой пары токенов.
     """
+
     refresh_token: str

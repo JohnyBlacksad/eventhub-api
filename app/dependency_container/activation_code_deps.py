@@ -1,7 +1,14 @@
+"""Dependency контейнер для кодов активации.
+
+Модуль содержит функции для внедрения зависимостей (DI)
+через FastAPI Depends для кодов активации.
+"""
+
 from fastapi import Depends
+
+from app.database import db_client
 from app.models.activation_code import ActivationCodeDAO
 from app.services.activation_code import ActivationCodeService
-from app.database import db_client
 
 
 def get_activation_code_collection():
@@ -10,7 +17,7 @@ def get_activation_code_collection():
     Returns:
         Коллекция MongoDB для кодов активации.
     """
-    return db_client.get_db()['org_code']  # type: ignore
+    return db_client.get_db()["org_code"]  # type: ignore
 
 
 def get_activation_code_dao(collection=Depends(get_activation_code_collection)) -> ActivationCodeDAO:
@@ -24,7 +31,10 @@ def get_activation_code_dao(collection=Depends(get_activation_code_collection)) 
     """
     return ActivationCodeDAO(collection)
 
-def get_activation_code_service(code_dao: ActivationCodeDAO = Depends(get_activation_code_dao)) -> ActivationCodeService:
+
+def get_activation_code_service(
+    code_dao: ActivationCodeDAO = Depends(get_activation_code_dao),
+) -> ActivationCodeService:
     """Создать ActivationCodeService с зависимостью.
 
     Args:

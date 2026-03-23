@@ -5,8 +5,9 @@
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from app.config_models.data_base_config import MongoDBClient
+
 from app.config_models.auth_config import AuthConfig
+from app.config_models.data_base_config import MongoDBClient
 from app.config_models.event_config import EventsConfig
 
 
@@ -21,10 +22,10 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        extra='allow',
-        env_file='.env',
-        env_file_encoding='utf-8',
-        env_nested_delimiter='.',
+        extra="allow",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_nested_delimiter=".",
     )
 
     mongo_db: MongoDBClient

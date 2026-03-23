@@ -1,100 +1,151 @@
-from datetime import datetime, timedelta, timezone
-
 import pytest
-from app.models.events import EventDAO
-from tests.mock.mongo_mock import get_mongo_mock
-from app.models.user import UserDAO
+
 from mongomock_motor import AsyncMongoMockCollection
-from tests.core.user_data_factory.fake_user_data import faker
-from tests.core.event_data_factory.fake_event_data import event_faker
+from app.models.activation_code import ActivationCodeDAO
+from app.models.events import EventDAO
+from app.models.registration import RegistrationDAO
+from app.models.user import UserDAO
+from tests.mock.mongo_mock import get_mongo_mock
 
 @pytest.fixture
 def mongo_mock():
+    """Создать мок базу данных MongoDB для тестов.
+
+    Returns:
+        MockEventDatabase: Мок база данных с коллекциями.
+    """
     db = get_mongo_mock()
     return db
 
+
 @pytest.fixture
 def user_collections(mongo_mock):
+    """Получить мок коллекцию пользователей.
+
+    Args:
+        mongo_mock: Мок база данных.
+
+    Returns:
+        AsyncMongoMockCollection: Коллекция users.
+    """
     user_collection = mongo_mock.get_users_collection()
     return user_collection
 
+
 @pytest.fixture
 def mock_user_dao(user_collections: AsyncMongoMockCollection):
+    """Создать UserDAO с мок коллекцией.
+
+    Args:
+        user_collections: Мок коллекция пользователей.
+
+    Returns:
+        UserDAO: DAO объект для работы с пользователями.
+    """
     return UserDAO(user_collections)
 
-@pytest.fixture
-async def created_user(mock_user_dao: UserDAO):
-    user = faker.get_user_register_data_dict()
-    create_user_id = await mock_user_dao.create_user(user)
-    db_user = await mock_user_dao.get_user_by_id(create_user_id)
-    return db_user
 
 @pytest.fixture
-async def base_users(mock_user_dao: UserDAO):
-    users_list = [faker.get_user_register_data_dict() for _ in range(10)]
-    for user in users_list:
-        await mock_user_dao.create_user(user)
+def activation_code_collection(mongo_mock):
+    """Получить мок коллекцию кодов активации.
 
-    return mock_user_dao
+    Args:
+        mongo_mock: Мок база данных.
 
-@pytest.fixture
-async def users_with_different_dates(mock_user_dao: UserDAO) -> dict[str, list | datetime]:
-    """Создаёт пользователей с разными created_at.
-
-    Возвращает dict с группами пользователей:
-    {
-        'early': [...],      # created_at = now - 10 sec
-        'middle': [...],     # created_at = now
-        'late': [...]        # created_at = now + 10 sec
-    }
+    Returns:
+        AsyncMongoMockCollection: Коллекция activation_codes.
     """
-    now = datetime.now(timezone.utc)
+    return mongo_mock.get_activation_codes_collection()
 
-    # Ранние пользователи (10 секунд назад)
-    early_users = []
-    for _ in range(3):
-        user_data = faker.get_user_register_data_dict()
-        user_data['created_at'] = now - timedelta(seconds=10)
-        user_id = await mock_user_dao.create_user(user_data)
-        db_user = await mock_user_dao.get_user_by_id(user_id)
-        early_users.append(db_user)
 
-    # Средние пользователи (сейчас)
-    middle_users = []
-    for _ in range(5):
-        user_data = faker.get_user_register_data_dict()
-        user_data['created_at'] = now
-        user_id = await mock_user_dao.create_user(user_data)
-        db_user = await mock_user_dao.get_user_by_id(user_id)
-        middle_users.append(db_user)
+@pytest.fixture
+def activation_code_dao(activation_code_collection: AsyncMongoMockCollection):
+    """Создать ActivationCodeDAO с мок коллекцией.
 
-    # Поздние пользователи (через 10 секунд)
-    late_users = []
-    for _ in range(2):
-        user_data = faker.get_user_register_data_dict()
-        user_data['created_at'] = now + timedelta(seconds=10)
-        user_id = await mock_user_dao.create_user(user_data)
-        db_user = await mock_user_dao.get_user_by_id(user_id)
-        late_users.append(db_user)
+    Args:
+        activation_code_collection: Мок коллекция кодов.
 
-    return {
-        'early': early_users,
-        'middle': middle_users,
-        'late': late_users,
-        'now': now
-    }
+    Returns:
+        ActivationCodeDAO: DAO объект для работы с кодами.
+    """
+    return ActivationCodeDAO(activation_code_collection)
+
+
+@pytest.fixture
+async def setup_indexes_for_activation_code(activation_code_collection: AsyncMongoMockCollection):
+    """Создать индексы для коллекции кодов активации.
+
+    Args:
+        activation_code_collection: Мок коллекция кодов.
+
+    Returns:
+        AsyncMongoMockCollection: Коллекция с созданными индексами.
+    """
+    await ActivationCodeDAO.setup_indexes(activation_code_collection)
+    return activation_code_collection
+
+
+@pytest.fixture
+def registration_collection(mongo_mock):
+    """Получить мок коллекцию регистраций.
+
+    Args:
+        mongo_mock: Мок база данных.
+
+    Returns:
+        AsyncMongoMockCollection: Коллекция registrations.
+    """
+    return mongo_mock.get_registrations_collection()
+
+
+@pytest.fixture
+def registration_dao(registration_collection: AsyncMongoMockCollection):
+    """Создать RegistrationDAO с мок коллекцией.
+
+    Args:
+        registration_collection: Мок коллекция регистраций.
+
+    Returns:
+        RegistrationDAO: DAO объект для работы с регистрациями.
+    """
+    return RegistrationDAO(registration_collection)
+
+
+@pytest.fixture
+async def setup_indexes_for_registration(registration_collection: AsyncMongoMockCollection):
+    """Создать индексы для коллекции регистраций.
+
+    Args:
+        registration_collection: Мок коллекция регистраций.
+
+    Returns:
+        AsyncMongoMockCollection: Коллекция с созданными индексами.
+    """
+    await RegistrationDAO.setup_indexes(registration_collection)
+    return registration_collection
+
 
 @pytest.fixture
 def event_collection(mongo_mock):
+    """Получить мок коллекцию событий.
+
+    Args:
+        mongo_mock: Мок база данных.
+
+    Returns:
+        AsyncMongoMockCollection: Коллекция events.
+    """
     return mongo_mock.get_events_collection()
+
 
 @pytest.fixture
 def event_dao(event_collection: AsyncMongoMockCollection):
-    return EventDAO(event_collection)
+    """Создать EventDAO с мок коллекцией.
 
-@pytest.fixture
-async def created_event(event_dao: EventDAO):
-    event_data = event_faker.get_event_data_dict()
-    event_id = await event_dao.create_event(event_data)
-    event = await event_dao.get_event(event_id)
-    return event
+    Args:
+        event_collection: Мок коллекция событий.
+
+    Returns:
+        EventDAO: DAO объект для работы с событиями.
+    """
+    return EventDAO(event_collection)

@@ -4,8 +4,10 @@
 подключением к MongoDB через Motor драйвер.
 """
 
-from motor.motor_asyncio import AsyncIOMotorClient
 from typing import Optional
+
+from motor.motor_asyncio import AsyncIOMotorClient
+
 from app.config import settings
 
 
@@ -58,12 +60,9 @@ class EventDataBase:
             ConnectionError: Если подключение не удалось.
         """
         try:
-            await self.client.admin.command('ping')
+            await self.client.admin.command("ping")
         except Exception as e:
-            raise ConnectionError(f'Database is not connected: {e}')
+            raise ConnectionError(f"Database is not connected: {e}")
 
 
-db_client = EventDataBase(
-    uri=settings.mongo_db.url,
-    db_name=settings.mongo_db.db_name
-)
+db_client = EventDataBase(uri=settings.mongo_db.url, db_name=settings.mongo_db.db_name)

@@ -4,11 +4,11 @@
 на события в MongoDB.
 """
 
+from datetime import datetime, timezone
 from typing import Optional
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
-from datetime import datetime, timezone
 from pymongo import ASCENDING
 
 
@@ -37,11 +37,8 @@ class RegistrationDAO:
         Args:
             collection: Коллекция MongoDB для регистраций.
         """
-        await collection.create_index(
-            [('event_id', 1),('user_id', 1)],
-            unique=True
-        )
-        await collection.create_index([('user_id', 1)])
+        await collection.create_index([("event_id", 1), ("user_id", 1)], unique=True)
+        await collection.create_index([("user_id", 1)])
 
     async def add_registration(self, event_id: str, user_id: str):
         """Добавить регистрацию пользователя на событие.
@@ -53,11 +50,9 @@ class RegistrationDAO:
         Returns:
             Результат операции вставки.
         """
-        result = await self.collection.insert_one({
-            'event_id': ObjectId(event_id),
-            'user_id': ObjectId(user_id),
-            'registered_at': datetime.now(timezone.utc)
-        })
+        result = await self.collection.insert_one(
+            {"event_id": ObjectId(event_id), "user_id": ObjectId(user_id), "registered_at": datetime.now(timezone.utc)}
+        )
         return result
 
     async def remove_registration(self, event_id: str, user_id: str):
@@ -70,17 +65,10 @@ class RegistrationDAO:
         Returns:
             Результат операции удаления.
         """
-        result = await self.collection.delete_one({
-            'event_id': ObjectId(event_id),
-            'user_id': ObjectId(user_id)
-        })
+        result = await self.collection.delete_one({"event_id": ObjectId(event_id), "user_id": ObjectId(user_id)})
         return result
 
-    async def get_event_registrations(
-            self,
-            event_id: str, skip: int = 0,
-            limit: int = 50
-    ) -> list[dict]:
+    async def get_event_registrations(self, event_id: str, skip: int = 0, limit: int = 50) -> list[dict]:
         """Получить список регистраций на событие с пагинацией.
 
         Args:
@@ -92,9 +80,8 @@ class RegistrationDAO:
             Список документов регистраций.
         """
         cursor = (
-            self.collection
-            .find({'event_id': ObjectId(event_id)})
-            .sort('registered_at', ASCENDING)
+            self.collection.find({"event_id": ObjectId(event_id)})
+            .sort("registered_at", ASCENDING)
             .skip(skip)
             .limit(limit)
         )
@@ -111,7 +98,7 @@ class RegistrationDAO:
         Returns:
             Список документов регистраций пользователя.
         """
-        cursor = self.collection.find({'user_id': ObjectId(user_id)})
+        cursor = self.collection.find({"user_id": ObjectId(user_id)})
         result = await cursor.to_list(length=limit)
         return result
 
@@ -125,10 +112,7 @@ class RegistrationDAO:
         Returns:
             dict | None: Документ регистрации или None если не найдена.
         """
-        payload = {
-            'event_id': ObjectId(event_id),
-            "user_id": ObjectId(user_id)
-        }
+        payload = {"event_id": ObjectId(event_id), "user_id": ObjectId(user_id)}
 
         registration = await self.collection.find_one(payload)
 
@@ -143,7 +127,7 @@ class RegistrationDAO:
         Returns:
             bool: True если регистрации удалены.
         """
-        payload = {'event_id': ObjectId(event_id)}
+        payload = {"event_id": ObjectId(event_id)}
         result = await self.collection.delete_many(payload)
         return result.deleted_count > 0
 
@@ -158,15 +142,12 @@ class RegistrationDAO:
             Результат операции обновления.
         """
         result = await self.collection.update_many(
-            {'event_id': ObjectId(event_id)},
-            {'$set': {'deleted_at': death_date}}
+            {"event_id": ObjectId(event_id)}, {"$set": {"deleted_at": death_date}}
         )
         return result
 
     async def delete_registration_by_user(self, user_id: str) -> bool:
-        '''Удалить все регистрации пользователя'''
-        result = await self.collection.delete_many(
-            {'user_id': ObjectId(user_id)}
-        )
+        """Удалить все регистрации пользователя"""
+        result = await self.collection.delete_many({"user_id": ObjectId(user_id)})
 
         return result.deleted_count > 0
