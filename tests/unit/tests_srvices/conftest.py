@@ -9,8 +9,10 @@
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from uuid import uuid4
 
 import pytest
+from bson import ObjectId
 
 from app.config_models.auth_config import AuthConfig
 from app.models.activation_code import ActivationCodeDAO
@@ -378,5 +380,126 @@ async def user_factory(user_service: UserService):
         user_data = faker.get_user_register_model()
         user = await user_service.register_user(user_data)
         return str(user.id)
+
+    return factory
+
+
+@pytest.fixture
+def code_factory_data():
+    """Фабрика данных для создания кода активации.
+
+    Returns:
+        dict: Данные для создания кода.
+    """
+
+    def factory(role=None, code=None) -> dict:
+        return {"role": role or UserRoleEnum.ORGANIZER, "code": code or str(uuid4())}
+
+    return factory
+
+
+@pytest.fixture
+async def created_activation_code(activation_code_dao: ActivationCodeDAO, code_factory_data):
+    """Создать код активации по умолчанию.
+
+    Args:
+        activation_code_dao: ActivationCodeDAO с мок коллекцией.
+        code_factory_data: Фабрика данных для кода.
+
+    Returns:
+        dict: Документ кода активации из БД.
+    """
+    code_data = code_factory_data()
+    code_id = await activation_code_dao.create_code(code_data)
+    code = await activation_code_dao.get_code(code_id)
+    return code
+
+
+@pytest.fixture
+async def activation_code_factory(activation_code_dao: ActivationCodeDAO):
+    """Фабрика для создания кодов активации.
+
+    Args:
+        role: Роль кода (по умолчанию ORGANIZER).
+        code: Строка кода (по умолчанию генерируется).
+        is_used: Флаг использования (по умолчанию False).
+        created_at: Время создания (по умолчанию сейчас).
+
+    Returns:
+        dict: Созданный код активации.
+    """
+
+    async def factory(
+        role: UserRoleEnum | None = None,
+        code: str | None = None,
+        is_used: bool = False,
+        created_at: datetime | None = None,
+    ) -> dict:
+        code_data = {
+            "role": role or UserRoleEnum.ORGANIZER,
+            "code": code or str(uuid4()),
+            "created_at": created_at or datetime.now(timezone.utc),
+        }
+
+        code_id = await activation_code_dao.create_code(code_data)
+
+        # Если нужен использованный код - обновляем вручную
+        if is_used:
+            await activation_code_dao.collection.update_one({"_id": ObjectId(code_id)}, {"$set": {"is_used": True}})
+
+        created_code = await activation_code_dao.get_code(code_id)
+
+        assert created_code
+
+        return created_code
+
+    return factory
+
+
+@pytest.fixture
+async def activation_codes_factory(activation_code_dao: ActivationCodeDAO):
+    """Фабрика для создания множественных кодов активации.
+
+    Args:
+        count: Количество кодов (по умолчанию 1).
+        role: Роль кода (применяется ко всем).
+        is_used_list: Список флагов is_used для каждого кода.
+        created_at_list: Список времён создания для каждого кода.
+
+    Returns:
+        list[dict]: Список созданных кодов.
+    """
+
+    async def factory(
+        count: int = 1,
+        role: UserRoleEnum | None = None,
+        is_used_list: list[bool] | None = None,
+        created_at_list: list[datetime] | None = None,
+    ) -> list[dict]:
+        codes = []
+
+        for i in range(count):
+            code_data = {
+                "role": role or UserRoleEnum.ORGANIZER,
+                "code": str(uuid4()),
+            }
+
+            code_id = await activation_code_dao.create_code(code_data)
+
+            # Обновляем created_at и is_used после создания
+            update_data = {}
+            if created_at_list and i < len(created_at_list):
+                update_data["created_at"] = created_at_list[i]
+
+            if is_used_list and i < len(is_used_list) and is_used_list[i]:
+                update_data["is_used"] = True
+
+            if update_data:
+                await activation_code_dao.collection.update_one({"_id": ObjectId(code_id)}, {"$set": update_data})
+
+            created_code = await activation_code_dao.get_code(code_id)
+            codes.append(created_code)
+
+        return codes
 
     return factory

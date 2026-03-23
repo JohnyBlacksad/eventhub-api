@@ -112,6 +112,9 @@ class ActivationCodeService:
         if not response:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Code not found")
 
+        response["_id"] = str(response["_id"])
+        if response.get("activated_by"):
+            response["activated_by"] = str(response["activated_by"])
         return ActivationCodeModelResponse.model_validate(response, from_attributes=True)
 
     async def delete_code(self, code_id: str) -> bool:
