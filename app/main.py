@@ -18,7 +18,7 @@ from app.models.activation_code import ActivationCodeDAO
 from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
 from app.models.user import UserDAO
-
+from app.migrations.runner import run_migrations
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,6 +27,12 @@ async def lifespan(app: FastAPI):
     Подключает к базе данных при старте и закрывает при остановке.
     """
     await db_client.connect()
+
+    db = db_client.get_db()
+    if db is None:
+        raise RuntimeError("Database connection failed")
+
+    await run_migrations(db)
 
     user_collection = get_user_collections()
     event_collection = get_events_collection()
