@@ -277,7 +277,7 @@ class EventService:
 
         result = await self.registration_dao.remove_registration(event_id, user_id)
 
-        if not result:
+        if not result.deleted_count:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Registration not found")
 
         return {"status": "unregistered", "event_id": event_id}
