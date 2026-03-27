@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     auth_config: AuthConfig
     events_config: EventsConfig
     redis_config: RedisConfig
+    log_level: str
 
 
 settings = Settings()

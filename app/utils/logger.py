@@ -7,7 +7,57 @@
 import json
 import logging
 import sys
+import uuid
 from typing import Any
+from contextvars import ContextVar
+from app.config import settings
+
+
+trace_id_var: ContextVar[str] = ContextVar('trace_id', default='')
+
+def set_trace_id(trace_id: str | None = None) -> tuple[str, Any]:
+    """Установить trace_id в контекст.
+    Args:
+        trace_id: Trace ID (Если None - сгенерируется новый)
+    Returns:
+        str: Установленный Trace ID
+    """
+
+    if trace_id is None:
+        trace_id = str(uuid.uuid4())
+    token = trace_id_var.set(trace_id)
+    return trace_id, token
+
+def get_trace_id() -> str:
+    """Получить текущий Trace ID из контекста
+    Returns:
+        str: Текущий trace_id
+    """
+    return trace_id_var.get()
+
+def get_logger(name: str) -> logging.Logger:
+    """Получить логгер с JSON форматтером.
+    Args:
+        name: Имя логгера
+    Returns:
+        Logger: Настроенный логгер.
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(getattr(logging, settings.log_level.upper()))
+
+    if logger.handlers:
+        return logger
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(getattr(logging, settings.log_level.upper()))
+
+    formatter = JSONFormatter()
+    handler.setFormatter(formatter)
+
+    logger.addHandler(handler)
+    logger.propagate = False
+
+    return logger
 
 
 class JSONFormatter(logging.Formatter):
@@ -31,6 +81,8 @@ class JSONFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
+            "service": "api",
+            "trace_id": get_trace_id(),
         }
 
         skip_attrs = {
@@ -57,6 +109,8 @@ class JSONFormatter(logging.Formatter):
             "message",
             "asctime",
             "logger",
+            "service",
+            "trace_id",
         }
 
         for key, value in record.__dict__.items():
@@ -66,7 +120,7 @@ class JSONFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exc_info"] = self.formatException(record.exc_info)
 
-        return json.dumps(log_data)
+        return json.dumps(log_data, ensure_ascii=False, default=str)
 
 
 def setup_logger(name: str = "eventhub", level: int = logging.INFO) -> logging.Logger:

@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException, status
 from app.api.api import main_router
 from app.database import db_client
 from app.redis_client import redis_client
+from app.middleware.request_context import RequestContextMiddleware
 from app.dependency_container.activation_code_deps import get_activation_code_collection
 from app.dependency_container.event_deps import get_events_collection, get_registrations_collection
 from app.dependency_container.users_deps import get_user_collections
@@ -89,6 +90,6 @@ async def health_check():
     return {'status': 'ok', 'components': components}
 
 
-
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(RequestContextMiddleware)
 app.include_router(main_router, prefix="/api/v1")

@@ -6,7 +6,8 @@ from app.database import db_client
 from app.redis_client import redis_client
 from app.config import settings
 from app.tasks.settings import TaskQueueSettings
-
+from app.tasks.middleware import TraceIdMiddleware
+from app.utils.logger import set_trace_id
 
 class TaskIQBroker:
     """Управление брокером задач"""
@@ -37,11 +38,14 @@ class TaskIQBroker:
             await redis_client.connect()
             await db_client.connect()
 
+
         @broker.on_event(TaskiqEvents.WORKER_SHUTDOWN)
         async def shutdown(state):
             """Закрытие подключений при остановке воркера."""
             await redis_client.close()
             await db_client.close()
+
+        broker.add_middlewares(TraceIdMiddleware())
 
         return broker
 
