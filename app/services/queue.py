@@ -19,6 +19,8 @@ from app.tasks.notifications import (
     send_registration_notification_task,
 )
 
+from app.utils.logger import get_trace_id
+
 class QueueService:
     """Сервис для отправки очередей в очередь
 
@@ -37,7 +39,7 @@ class QueueService:
             user_id: MongoDB ObjectID пользователя.
         """
 
-        await delete_event_task.kiq(event_id, user_id)
+        await delete_event_task.kicker().with_labels(trace_id=get_trace_id()).kiq(event_id, user_id)
 
     async def invalidate_event_cache(self, event_id: str):
         """Отправить задачу инвалидации кэша события.
@@ -46,12 +48,12 @@ class QueueService:
             event_id: MongoDB ObjectID события.
         """
 
-        await invalidate_event_cache_task.kiq(event_id)
+        await invalidate_event_cache_task.kicker().with_labels(trace_id=get_trace_id()).kiq(event_id)
 
     async def invalidate_event_list_cache(self):
         """Отправить задачу инвалидации кэша списка событий"""
 
-        await invalidate_event_list_cache_task.kiq()
+        await invalidate_event_list_cache_task.kicker().with_labels(trace_id=get_trace_id()).kiq()
 
     async def invalidate_user_cache(self, user_id: str):
         """Отправить задачу инвалидации кэша пользователя
@@ -60,12 +62,12 @@ class QueueService:
             user_id: MongoDB ObjectID пользователя.
         """
 
-        await invalidate_user_cache_task.kiq(user_id)
+        await invalidate_user_cache_task.kicker().with_labels(trace_id=get_trace_id()).kiq(user_id)
 
     async def invalidate_user_list_cache(self):
         """Отправить задачу инвалидации кэша списка пользователей"""
 
-        await invalidate_user_list_cache_task.kiq()
+        await invalidate_user_list_cache_task.kicker().with_labels(trace_id=get_trace_id()).kiq()
 
     async def send_registration_notification(
         self,
@@ -82,7 +84,7 @@ class QueueService:
             email: Email пользователя (опционально).
             phone: Телефон пользователя (опционально).
         """
-        await send_registration_notification_task.kiq(
+        await send_registration_notification_task.kicker().with_labels(trace_id=get_trace_id()).kiq(
             user_id, event_id, email, phone
         )
 
@@ -99,7 +101,7 @@ class QueueService:
             event_id: MongoDB ObjectId события.
             update_type: Тип обновления.
         """
-        await send_event_update_notification_task.kiq(
+        await send_event_update_notification_task.kicker().with_labels(trace_id=get_trace_id()).kiq(
             user_ids, event_id, update_type
         )
 
