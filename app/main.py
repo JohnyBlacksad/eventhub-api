@@ -48,7 +48,13 @@ async def lifespan(app: FastAPI):
     await redis_client.close()
     await db_client.close()
 
-app = FastAPI(title="EventHub API", version="0.1.0", lifespan=lifespan)  # redirect_slashes=True по умолчанию
+app = FastAPI(
+    title="EventHub API",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
+    openapi_url="/api/v1/openapi.json")  # redirect_slashes=True по умолчанию
 
 
 @app.get("/health", tags=["System"])

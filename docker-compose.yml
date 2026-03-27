@@ -34,8 +34,8 @@ services:
 
   api:
     build: .
-    ports:
-      - "8001:8001"
+    #ports:
+      #- "8001:8001"
     env_file:
       - .env
     environment:
@@ -77,7 +77,27 @@ services:
       retries: 3
       start_period: 30s
 
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "81:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - api
+    networks:
+      - eventhub
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q https://localhost:443 --no-check-certificate || exit 1"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
 volumes:
+  nginx_ssl:
   mongodb_data:
   redis_data:
 
