@@ -11,6 +11,7 @@ from app.dependency_container.event_deps import get_event_service
 from app.schemas.event import EventCreateModel, EventFilterParams, EventResponseModel, EventUpdateModel, GetEventsModel
 from app.schemas.users import UserResponseModel
 from app.services.event import EventService
+from app.services.queue import QueueService, get_queue_service
 
 event_router = APIRouter(tags=["Events"])
 
@@ -104,6 +105,7 @@ async def delete_event(
     event_id: str,
     event_service: EventService = Depends(get_event_service),
     current_user: UserResponseModel = Depends(require_role),
+    queue_service: QueueService = Depends(get_queue_service),
 ):
     """Удалить событие (только создатель или ADMIN).
 
@@ -111,11 +113,12 @@ async def delete_event(
         event_id: MongoDB ObjectId события.
         event_service: Сервис событий.
         current_user: Текущий пользователь (создатель или ADMIN).
+        queue_service: Сервис очередей.
 
     Returns:
         None: Возвращает 204 No Content при успешном удалении.
     """
-    response = await event_service.delete_event(event_id=event_id, user_id=str(current_user.id))
+    response = await queue_service.delete_event(event_id=event_id, user_id=str(current_user.id))
 
 
 @event_router.post("/{event_id}/register", status_code=status.HTTP_201_CREATED)
@@ -123,6 +126,7 @@ async def register_for_event(
     event_id: str,
     event_service: EventService = Depends(get_event_service),
     current_user: UserResponseModel = Depends(get_current_user),
+    queue_service: QueueService = Depends(get_queue_service),
 ):
     """Зарегистрировать текущего пользователя на событие.
 
@@ -135,6 +139,14 @@ async def register_for_event(
         dict: Статус регистрации.
     """
     response = await event_service.register_for_event(event_id=event_id, user_id=str(current_user.id))
+
+    await queue_service.send_registration_notification(
+        user_id=str(current_user.id),
+        event_id=event_id,
+    )
+
+    return response
+
 
 
 @event_router.delete("/{event_id}/register", status_code=status.HTTP_200_OK)

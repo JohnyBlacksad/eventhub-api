@@ -4,12 +4,14 @@
 
 ## Описание
 
-EventHub API — это RESTful API для создания, управления и регистрации на события. Проект реализован на FastAPI с использованием MongoDB в качестве базы данных.
+EventHub API — это RESTful API для создания, управления и регистрации на события. Проект реализован на FastAPI с использованием MongoDB в качестве базы данных, Redis для кэширования и очередей задач, и TaskIQ для фоновой обработки.
 
 ## Стек технологий
 
 - **Backend:** FastAPI (Python 3.12)
 - **База данных:** MongoDB 7 (Motor — асинхронный драйвер)
+- **Кэширование:** Redis 8 (redis.asyncio)
+- **Очереди задач:** TaskIQ + Redis (асинхронные фоновые задачи)
 - **Аутентификация:** JWT (access токен 30 мин, refresh токен 7 дней)
 - **Хеширование паролей:** bcrypt
 - **Контейнеризация:** Docker, Docker Compose
@@ -32,11 +34,19 @@ eventhub-api/
 │   ├── config_models/
 │   │   ├── auth_config.py        # Настройки JWT
 │   │   ├── data_base_config.py   # Настройки MongoDB
-│   │   └── event_config.py       # Настройки событий
+│   │   ├── event_config.py       # Настройки событий
+│   │   └── redis_config.py       # Настройки Redis
 │   ├── dependency_container/
 │   │   ├── activation_code_deps.py
 │   │   ├── event_deps.py
 │   │   └── users_deps.py
+│   ├── middleware/
+│   │   └── logging.py            # Middleware для JSON логирования
+│   ├── migrations/
+│   │   ├── base.py               # База миграций
+│   │   ├── runner.py             # Запуск миграций
+│   │   └── versions/
+│   │       └── 001_initial.py    # Первая миграция
 │   ├── models/
 │   │   ├── activation_code.py    # ActivationCodeDAO
 │   │   ├── events.py             # EventDAO
@@ -53,32 +63,46 @@ eventhub-api/
 │   │   ├── activation_code.py    # ActivationCodeService
 │   │   ├── auth.py               # AuthService (JWT, bcrypt)
 │   │   ├── base.py               # BaseService (константы)
+│   │   ├── cache.py              # CacheService (Redis кэш)
 │   │   ├── event.py              # EventService
+│   │   ├── queue.py              # QueueService (очереди задач)
 │   │   └── user.py               # UserService
+│   ├── tasks/
+│   │   ├── __init__.py           # Экспорты
+│   │   ├── broker.py             # TaskIQ брокер + startup/shutdown хуки
+│   │   ├── cache.py              # Задачи инвалидации кэша
+│   │   ├── cleanup.py            # Задачи очистки (delete_event_task)
+│   │   ├── notifications.py      # Задачи уведомлений (email/SMS)
+│   │   ├── settings.py           # Константы очередей
+│   │   └── worker.py             # Точка входа воркера
 │   ├── config.py                 # Конфигурация приложения
 │   ├── database.py               # Подключение к MongoDB
-│   ├── main.py                   # Точка входа
-│   ├── middleware/
-│   │   └── logging.py            # Middleware для JSON логирования
+│   ├── main.py                   # Точка входа FastAPI
+│   ├── redis_client.py           # Подключение к Redis
 │   └── utils/
 │       └── logger.py             # Настройка логгера (JSON Formatter)
 │
-├── docker-compose.yml            # Основной проект (API + MongoDB)
+├── docker-compose.yml            # API + MongoDB + Redis + Worker
 ├── docker-compose.logging.yml    # Логирование (Loki + Promtail + Grafana)
 ├── Dockerfile
-├── requirements.txt
+├── pyproject.toml                # Зависимости Poetry
 ├── Makefile                      # Команды для управления контейнерами
 ├── loki/
-│   └── local-config.yaml         # Конфигурация Loki
+│   └── local-config.yml          # Конфигурация Loki
 ├── promtail/
 │   └── config.yml                # Конфигурация Promtail
 ├── grafana/
 │   └── provisioning/
 │       ├── datasources/
-│       │   └── loki-datasource.yaml  # Loki datasource
+│       │   └── loki-datasource.yaml
 │       └── dashboards/
-│           └── logs-dashboard.json   # Дашборд логов
-└── README.md
+│           └── loki-dashboard.yaml
+└── tests/
+    ├── conftest.py
+    ├── core/                     # Тестовые утилиты и фабрики
+    ├── mock/                     # Мок объекты
+    ├── scripts/                  # Скрипты для тестов
+    └── unit/                     # Юнит тесты (213 тестов)
 ```
 
 ## Быстрый старт
@@ -96,26 +120,9 @@ git clone <repository-url>
 cd eventhub-api
 ```
 
-2. Запустите контейнеры:
-```bash
-docker compose up --build
-```
-
-3. Откройте Swagger UI:
-```
-http://localhost:8001/docs
-```
-
-### Локальная разработка
-
-1. Установите зависимости:
-```bash
-pip install -r requirements.txt
-```
-
 2. Создайте файл `.env`:
 ```env
-MONGO_DB.URL=mongodb://localhost:27017
+MONGO_DB.URL=mongodb://mongodb:27017
 MONGO_DB.DB_NAME=eventhub
 
 AUTH_CONFIG.CRYPTO_SCHEMAS=bcrypt
@@ -125,16 +132,51 @@ AUTH_CONFIG.ACCESS_TOKEN_EXPIRE_TIME=30
 AUTH_CONFIG.REFRESH_TOKEN_EXPIRE_TIME=7
 
 EVENTS_CONFIG.CLEANUP_SEC=300
+
+REDIS_CONFIG.URL=redis://redis:6379
+REDIS_CONFIG.DB=0
+REDIS_CONFIG.PASSWORD=
 ```
 
-3. Запустите MongoDB (локально или через Docker):
+3. Запустите контейнеры:
+```bash
+docker compose up --build
+```
+
+4. Откройте Swagger UI:
+```
+http://localhost:8001/docs
+```
+
+### Локальная разработка
+
+1. Установите зависимости (Poetry):
+```bash
+poetry install
+```
+
+2. Запустите MongoDB и Redis (через Docker):
 ```bash
 docker run -d -p 27017:27017 --name mongodb mongo:7
+docker run -d -p 6379:6379 --name redis redis:8-alpine
+```
+
+3. Создайте файл `.env`:
+```env
+MONGO_DB.URL=mongodb://localhost:27017
+MONGO_DB.DB_NAME=eventhub
+REDIS_CONFIG.URL=redis://localhost:6379
+# ... остальные переменные
 ```
 
 4. Запустите сервер:
 ```bash
 uvicorn app.main:app --reload --port 8001
+```
+
+5. Запустите воркер очередей (отдельный терминал):
+```bash
+taskiq worker app.tasks.broker:broker
 ```
 
 ## API Endpoints
@@ -164,7 +206,7 @@ uvicorn app.main:app --reload --port 8001
 | POST | `/api/v1/events` | Создать событие | Organizer/Admin |
 | GET | `/api/v1/events/{id}` | Получить событие | Public |
 | PUT | `/api/v1/events/{id}` | Обновить событие | Creator/Admin |
-| DELETE | `/api/v1/events/{id}` | Удалить событие | Creator/Admin |
+| DELETE | `/api/v1/events/{id}` | Удалить событие (очередь) | Creator/Admin |
 | POST | `/api/v1/events/{id}/register` | Зарегистрироваться | User |
 | DELETE | `/api/v1/events/{id}/register` | Отменить регистрацию | User |
 | GET | `/api/v1/events/{id}/participants` | Участники | Public |
@@ -180,7 +222,7 @@ uvicorn app.main:app --reload --port 8001
 | DELETE | `/api/v1/admin/users/{id}` | Удалить пользователя (cascade) | Admin |
 | PUT | `/api/v1/admin/users/{id}/role` | Сменить роль | Admin |
 | GET | `/api/v1/admin/events` | Все события | Admin |
-| DELETE | `/api/v1/admin/events/{id}` | Удалить событие | Admin |
+| DELETE | `/api/v1/admin/events/{id}` | Удалить событие (очередь) | Admin |
 | POST | `/api/v1/admin/activation-code` | Создать код активации | Admin |
 | GET | `/api/v1/admin/activation-codes` | Список кодов | Admin |
 | DELETE | `/api/v1/admin/activation-code/{id}` | Удалить код | Admin |
@@ -189,7 +231,7 @@ uvicorn app.main:app --reload --port 8001
 
 | Метод | Endpoint | Описание |
 |-------|----------|----------|
-| GET | `/health` | Проверка здоровья API и БД |
+| GET | `/health` | Проверка здоровья API, БД и Redis |
 
 ## Роли пользователей
 
@@ -248,12 +290,73 @@ curl -X POST http://localhost:8001/api/v1/events \
   }'
 ```
 
-### Регистрация на событие
+### Удаление события (через очередь)
 
 ```bash
-curl -X POST http://localhost:8001/api/v1/events/{event_id}/register \
+curl -X DELETE http://localhost:8001/api/v1/events/{event_id} \
   -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
+
+Задача выполняется асинхронно через TaskIQ воркер.
+
+## Очереди задач (TaskIQ)
+
+Проект использует **TaskIQ** для асинхронной обработки фоновых задач.
+
+### Архитектура очередей
+
+```
+┌─────────────┐     ┌──────────┐     ┌──────────┐
+│   FastAPI   │ ──> │   Redis  │ <── │  Worker  │
+│    (API)    │     │  (Broker)│     │ (TaskIQ) │
+└─────────────┘     └──────────┘     └──────────┘
+```
+
+### Задачи
+
+| Задача | Описание | Очередь |
+|--------|----------|---------|
+| `delete_event_task` | Удаление события (cascade + TTL) | cleanup |
+| `invalidate_event_cache_task` | Инвалидация кэша события | cache |
+| `invalidate_user_cache_task` | Инвалидация кэша пользователя | cache |
+| `send_registration_notification_task` | Уведомление о регистрации | notification |
+
+### Запуск воркера
+
+```bash
+# Через Docker Compose (автоматически)
+docker compose up worker
+
+# Локально
+taskiq worker app.tasks.broker:broker
+```
+
+### Мониторинг очередей
+
+```bash
+docker compose logs worker
+```
+
+## Кэширование (Redis)
+
+Проект использует **Redis** для кэширования часто запрашиваемых данных.
+
+### Кэшируемые данные
+
+| Данные | TTL | Ключ |
+|--------|-----|------|
+| Событие | 5 мин | `event:{event_id}` |
+| Пользователь | 10 мин | `user:{user_id}` |
+| Список событий | 5 мин | `event:list:{filters_hash}` |
+| Список пользователей | 5 мин | `user:list:{filters_hash}` |
+
+### Инвалидация кэша
+
+Кэш инвалидируется автоматически при:
+- Обновлении данных
+- Удалении данных
+- Изменении роли пользователя
+- Бане/разбане пользователя
 
 ## Логирование и мониторинг
 
@@ -373,6 +476,14 @@ sum by (path) (count_over_time({service="api"} | json | status_code >= 400 [1h])
 ```bash
 pytest --cov=app
 ```
+
+### Покрытие кода
+
+- **Отчёт в терминале:** `pytest --cov=app`
+- **HTML отчёт:** `pytest --cov-report=html`
+- **Allure отчёт:** `allure serve tests/reports/allure-results`
+
+### Количество тестов: 213
 
 ## Документация
 

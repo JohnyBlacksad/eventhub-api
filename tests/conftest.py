@@ -22,7 +22,6 @@ def pytest_configure(config):
     def disabled_should_convert_mark_to_tag(mark):
         return False
 
-    import allure_pytest.utils as utils
     utils.should_convert_mark_to_tag = disabled_should_convert_mark_to_tag
 
 
@@ -66,15 +65,3 @@ def pytest_runtest_makereport(item, call):
                 name="event_data_on_failure",
                 attachment_type=allure.attachment_type.JSON
             )
-
-
-
-from unittest.mock import AsyncMock, patch
-
-@pytest.fixture(autouse=True)
-def mock_redis():
-    # Мы подменяем метод connect, чтобы он ничего не делал
-    # и подменяем сам клиент на пустышку
-    with patch("app.redis_client.redis_client.connect", new_call=AsyncMock()), \
-         patch("app.redis_client.redis_client.client", new=AsyncMock()):
-        yield

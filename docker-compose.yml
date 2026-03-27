@@ -52,6 +52,31 @@ services:
       redis:
         condition: service_healthy
 
+  worker:
+    build: .
+    command: taskiq worker app.tasks.broker:broker
+    env_file:
+      - .env
+    environment:
+      - MONGO_DB.URL=mongodb://mongodb:27017
+      - MONGO_DB.DB_NAME=eventhub
+      - REDIS_CONFIG.URL=redis://redis:6379
+      - REDIS_CONFIG.DB=0
+      - REDIS_CONFIG.PASSWORD=
+    networks:
+      - eventhub
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep 'taskiq worker' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 volumes:
   mongodb_data:
   redis_data:

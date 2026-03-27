@@ -7,7 +7,7 @@ import json
 import redis.asyncio as redis
 from typing import Optional, Union
 from app.redis_client import redis_client
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 
 class CacheService:
 
@@ -107,6 +107,8 @@ class CacheService:
 
         if isinstance(events, BaseModel):
             data = events.model_dump_json(by_alias=True)
+        elif isinstance(events, list):
+            data = TypeAdapter(list).dump_json(events, by_alias=True).decode()
         else:
             data = json.dumps(events)
 
@@ -143,6 +145,8 @@ class CacheService:
 
         if isinstance(users, BaseModel):
             data = users.model_dump_json(by_alias=True)
+        elif isinstance(users, list):
+            data = TypeAdapter(list).dump_json(users, by_alias=True).decode()
         else:
             data = json.dumps(users)
 

@@ -85,7 +85,8 @@ def user_service(
     mock_user_dao: UserDAO,
     auth_service: AuthService,
     activation_code_dao: ActivationCodeDAO,
-    event_dao: EventDAO
+    event_dao: EventDAO,
+    mock_cache_service
     ):
 
     """
@@ -96,6 +97,7 @@ def user_service(
         auth_service: Мок сервиса аутентификации `AuthService`
         activation_code_dao: Мок `ActivationCodeDAO` на mongomock-morot
         event_dao: Мок `EventDAO` на mongomock-motor
+        mock_cache_service: Мок `CacheService` для тестов
 
     Returns:
         UserService: Сервис с бизнес логикой пользователей
@@ -105,27 +107,31 @@ def user_service(
         user_dao=mock_user_dao,
         auth_service=auth_service,
         code_dao=activation_code_dao,
-        event_dao=event_dao
+        event_dao=event_dao,
+        cache=mock_cache_service
     )
 
 
 @pytest.fixture
 def event_service(
     event_dao: EventDAO,
-    registration_dao: RegistrationDAO
+    registration_dao: RegistrationDAO,
+    mock_cache_service
 ) -> EventService:
     """Создать EventService с мок зависимостями.
 
     Args:
         event_dao: EventDAO с мок коллекцией.
         registration_dao: RegistrationDAO с мок коллекцией.
+        mock_cache_service: Мок CacheService для тестов.
 
     Returns:
         EventService: Сервис событий для тестов.
     """
     return EventService(
         event_dao,
-        registration_dao
+        registration_dao,
+        cache=mock_cache_service
     )
 
 @pytest.fixture
@@ -503,3 +509,37 @@ async def activation_codes_factory(activation_code_dao: ActivationCodeDAO):
         return codes
 
     return factory
+
+
+@pytest.fixture
+def mock_cache_service(mocker):
+    """Создать мок CacheService для тестов.
+
+    Returns:
+        MagicMock: Мок сервис кэширования.
+    """
+    mock_cache = mocker.AsyncMock()
+
+    # Методы для событий
+    mock_cache.get_event = mocker.AsyncMock(return_value=None)
+    mock_cache.set_event = mocker.AsyncMock()
+    mock_cache.delete_event = mocker.AsyncMock()
+
+    # Методы для пользователей
+    mock_cache.get_user = mocker.AsyncMock(return_value=None)
+    mock_cache.set_user = mocker.AsyncMock()
+    mock_cache.delete_user = mocker.AsyncMock()
+
+    # Методы для списков
+    mock_cache.get_event_list = mocker.AsyncMock(return_value=None)
+    mock_cache.set_events_list = mocker.AsyncMock()
+    mock_cache.delete_event_list = mocker.AsyncMock()
+
+    mock_cache.get_user_list = mocker.AsyncMock(return_value=None)
+    mock_cache.set_user_list = mocker.AsyncMock()
+    mock_cache.delete_user_list = mocker.AsyncMock()
+
+    mock_cache.clear_all = mocker.AsyncMock()
+    mock_cache.health_check = mocker.AsyncMock(return_value=True)
+
+    return mock_cache

@@ -22,6 +22,8 @@ from app.schemas.users import GetUsersResponseModel, UserFilterModel, UserRespon
 from app.services.activation_code import ActivationCodeService
 from app.services.event import EventService
 from app.services.user import UserService
+from app.services.queue import QueueService, get_queue_service
+
 
 admin_route = APIRouter(tags=["Admin"])
 
@@ -31,6 +33,7 @@ async def ban_user(
     user_id: str,
     current_user: UserResponseModel = Depends(require_admin),
     user_service: UserService = Depends(get_user_service),
+    queue_service: QueueService = Depends(get_queue_service),
 ):
     """Забанить пользователя (только ADMIN).
 
@@ -38,11 +41,17 @@ async def ban_user(
         user_id: MongoDB ObjectId пользователя.
         current_user: Текущий пользователь (ADMIN).
         user_service: Сервис пользователей.
-
+        queue_service: Сервис очередей.
     Returns:
         UserResponseModel: Обновлённые данные пользователя.
     """
-    return await user_service.set_ban_user(user_id=user_id, is_banned=True)
+
+    updated_user = await user_service.set_ban_user(user_id=user_id, is_banned=True)
+
+    await queue_service.invalidate_user_cache(user_id)
+    await queue_service.invalidate_user_list_cache()
+
+    return updated_user
 
 
 @admin_route.put("/users/{user_id}/unban", response_model=UserResponseModel, status_code=status.HTTP_200_OK)
@@ -50,6 +59,7 @@ async def unban_user(
     user_id: str,
     current_user: UserResponseModel = Depends(require_admin),
     user_service: UserService = Depends(get_user_service),
+    queue_service: QueueService = Depends(get_queue_service),
 ):
     """Разбанить пользователя (только ADMIN).
 
@@ -57,11 +67,17 @@ async def unban_user(
         user_id: MongoDB ObjectId пользователя.
         current_user: Текущий пользователь (ADMIN).
         user_service: Сервис пользователей.
+        queue_service: Сервис очередей.
 
     Returns:
         UserResponseModel: Обновлённые данные пользователя.
     """
-    return await user_service.set_ban_user(user_id=user_id, is_banned=False)
+    updated_user = await user_service.set_ban_user(user_id=user_id, is_banned=False)
+
+    await queue_service.invalidate_user_cache(user_id)
+    await queue_service.invalidate_user_list_cache()
+
+    return updated_user
 
 
 @admin_route.post("/activation-code", response_model=ActivationCodeModelResponse, status_code=status.HTTP_201_CREATED)
@@ -177,6 +193,7 @@ async def delete_event_admin(
     event_id: str,
     current_user: UserResponseModel = Depends(require_admin),
     service: EventService = Depends(get_event_service),
+    queue_service: QueueService = Depends(get_queue_service),
 ):
     """Удалить событие по ID (только ADMIN).
 
@@ -184,12 +201,15 @@ async def delete_event_admin(
         event_id: MongoDB ObjectId события.
         current_user: Текущий пользователь (ADMIN).
         service: Сервис событий.
-
+        queue_service: Сервис очередей.
     Returns:
         None: Возвращает 204 No Content при успешном удалении.
     """
+
     await service.delete_event_for_admin(event_id=event_id)
 
+    await queue_service.invalidate_event_cache(event_id)
+    await queue_service.invalidate_event_list_cache()
 
 @admin_route.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user_admin(
@@ -197,6 +217,7 @@ async def delete_user_admin(
     current_user: UserResponseModel = Depends(require_admin),
     user_service: UserService = Depends(get_user_service),
     event_service: EventService = Depends(get_event_service),
+    queue_service: QueueService = Depends(get_queue_service),
 ):
     """Удалить пользователя и все связанные данные (только ADMIN).
 
@@ -205,6 +226,7 @@ async def delete_user_admin(
         current_user: Текущий пользователь (ADMIN).
         user_service: Сервис пользователей.
         event_service: Сервис событий.
+        queue_service: Сервис очередей.
 
     Returns:
         None: Возвращает 204 No Content при успешном удалении.
@@ -219,6 +241,9 @@ async def delete_user_admin(
     if not is_deleted:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete user")
 
+    await queue_service.invalidate_user_cache(user_id)
+    await queue_service.invalidate_user_list_cache()
+
 
 @admin_route.put("/users/{user_id}/role", response_model=UserResponseModel)
 async def change_user_role_admin(
@@ -226,6 +251,7 @@ async def change_user_role_admin(
     user_role: UserRoleEnum,
     current_user: UserResponseModel = Depends(require_admin),
     service: UserService = Depends(get_user_service),
+    queue_service: QueueService = Depends(get_queue_service),
 ):
     """Изменить роль пользователя (только ADMIN).
 
@@ -234,11 +260,15 @@ async def change_user_role_admin(
         user_role: Enum со строковыми значениями (user, organizer, admin)
         current_user: Текущий пользователь (ADMIN).
         service: Сервис пользователей.
+        queue_service: Сервис очередей.
 
     Returns:
         UserResponseModel: Возвращает модель пользователя с обновленной ролью.
     """
 
     response = await service.change_user_role(user_id, user_role)
+
+    await queue_service.invalidate_user_cache(user_id)
+    await queue_service.invalidate_user_list_cache()
 
     return response
