@@ -12,7 +12,10 @@ from fastapi.concurrency import run_in_threadpool
 from passlib.context import CryptContext
 
 from app.config import settings
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
 
+logger = get_logger(LoggerName.AUTH_SERVICE_LOGGER)
 
 class AuthService:
     """Сервис для работы с JWT токенами и хеширования паролей.
@@ -135,8 +138,9 @@ class AuthService:
         try:
             payload = await run_in_threadpool(jwt.decode, token, self.secret_key, algorithms=[self.algorithm])
             return payload
-
         except jwt.ExpiredSignatureError:
+            logger.warning("Token expired", extra={"token_prefix": token[:10]+"..."})
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as e:
+            logger.warning("Invalid token", extra={"token_prefix": token[:10]+"...", "error": str(e)})
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")

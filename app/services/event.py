@@ -18,7 +18,10 @@ from app.models.registration import RegistrationDAO
 from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 from app.schemas.event import EventCreateModel, EventFilterParams, EventResponseModel, EventUpdateModel
 from app.services.cache import CacheService, cache_service
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
 
+logger = get_logger(LoggerName.EVENT_SERVICE_LOGGER)
 
 class EventService:
     """Сервис для бизнес-логики событий.
@@ -68,6 +71,10 @@ class EventService:
         raw_event = await self.event_dao.get_event(str(new_id))
 
         if not raw_event:
+            logger.error("Event creation failed", extra={
+                "user_id": user_id,
+                "title": event_data.title,
+            })
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Server error. Event not created, please try again later.",
@@ -75,6 +82,12 @@ class EventService:
 
         await self.cache.delete_event(str(new_id))
         await self.cache.delete_event_list()
+
+        logger.info("Event created successfully", extra={
+            "event_id": str(new_id),
+            "title": event_data.title,
+            "created_by": user_id,
+        })
 
         return EventResponseModel.model_validate(raw_event, from_attributes=True)
 
@@ -96,11 +109,17 @@ class EventService:
             return EventResponseModel.model_validate(cached)
 
         if not ObjectId.is_valid(event_id):
+            logger.warning("Get event failed: Invalid event ID format", extra={
+                "event_id": str(event_id),
+            })
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
         raw_event = await self.event_dao.get_event(event_id)
 
         if not raw_event:
+            logger.warning("Get event failed: Event not found", extra={
+                "event_id": str(event_id),
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         raw_event["_id"] = str(raw_event["_id"])
@@ -165,9 +184,17 @@ class EventService:
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
+            logger.warning("Update event failed: Event not found", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         if str(current_event["created_by"]) != user_id:
+            logger.warning("Update event failed: not creator", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not the creator of this event")
 
         data = update_data.model_dump(by_alias=True, exclude_none=True)
@@ -190,6 +217,11 @@ class EventService:
         await self.cache.delete_event(event_id)
         await self.cache.delete_event_list()
 
+        logger.info("Update event successfully", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
+
         return EventResponseModel.model_validate(updated_event, from_attributes=True)
 
     async def delete_event(self, event_id: str, user_id: str) -> bool:
@@ -209,15 +241,28 @@ class EventService:
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
+            logger.warning("Delete event failed: Event not found", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         if str(current_event["created_by"]) != user_id:
+            logger.warning("Delete event failed: not creator", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not the creator of this event")
         await self.registration_dao.delete_all_registrations_for_event(event_id)
         result = await self.event_dao.delete_event(event_id)
 
         await self.cache.delete_event(event_id)
         await self.cache.delete_event_list()
+
+        logger.info("Event deleted successfully", extra={
+            "event_id": event_id,
+            "user_id": user_id,
+        })
 
         return result
 
@@ -239,6 +284,9 @@ class EventService:
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
+            logger.warning("Delete event by admin failed: Event not found", extra={
+                "event_id": str(event_id),
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         await self.registration_dao.delete_all_registrations_for_event(event_id)
@@ -246,6 +294,10 @@ class EventService:
 
         await self.cache.delete_event(event_id)
         await self.cache.delete_event_list()
+
+        logger.info("Delete event by admin successfully", extra={
+                "event_id": str(event_id),
+            })
 
         return result
 
@@ -267,16 +319,28 @@ class EventService:
         """
         # Валидация ObjectId
         if not ObjectId.is_valid(event_id):
+            logger.error("Register for event failed: Invalid event ID format", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
+            logger.warning("Register for event failed: Event not found", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         existing = await self.registration_dao.get_existing_registration(event_id, user_id)
 
         if existing:
+            logger.warning("Register for event failed: User already registered", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="You are already registered for this event"
             )
@@ -287,12 +351,21 @@ class EventService:
             )
 
             if len(registrations) >= current_event["max_participants"]:
+                logger.warning("Register for event failed: Event is full participants", extra={
+                    "event_id": str(event_id),
+                    "user_id": str(user_id),
+                })
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Event is full")
 
         await self.registration_dao.add_registration(event_id, user_id)
 
         await self.cache.delete_event(event_id)
         await self.cache.delete_event_list()
+
+        logger.info("Register for event successfully", extra={
+                    "event_id": str(event_id),
+                    "user_id": str(user_id),
+                })
 
         return {"status": "registered", "event_id": event_id}
 
@@ -313,21 +386,37 @@ class EventService:
         """
         # Валидация ObjectId
         if not ObjectId.is_valid(event_id):
+            logger.error("Unregister for event failed: Invalid event ID format", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
+            logger.warning("Unregister for event failed: Event not found", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         result = await self.registration_dao.remove_registration(event_id, user_id)
 
         if not result.deleted_count:
+            logger.warning("Unregister for event failed: Registration not found", extra={
+                "event_id": str(event_id),
+                "user_id": str(user_id),
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Registration not found")
 
         await self.cache.delete_event(event_id)
         await self.cache.delete_event_list()
 
+        logger.info("Unregister for event successfully", extra={
+                    "event_id": str(event_id),
+                    "user_id": str(user_id),
+                })
 
         return {"status": "unregistered", "event_id": event_id}
 
@@ -348,11 +437,17 @@ class EventService:
         """
 
         if not ObjectId.is_valid(event_id):
+            logger.error("Get event participants failed: Invalid event ID format", extra={
+                "event_id": str(event_id),
+            })
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid event ID format")
 
         current_event = await self.event_dao.get_event(event_id)
 
         if not current_event:
+            logger.warning("Get event participants failed: Event not found", extra={
+                "event_id": str(event_id),
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
         participants = await self.registration_dao.get_event_registrations(event_id=event_id, skip=skip, limit=limit)
@@ -404,6 +499,10 @@ class EventService:
         is_events_deleted = await self.event_dao.delete_events_by_user(user_id)
 
         await self.cache.delete_event_list()
+
+        logger.info("Delete all user events and registrations (CASCADE) successfully", extra={
+                    "user_id": str(user_id)
+                })
 
         if is_registrations_deleted and is_events_deleted:
             return True

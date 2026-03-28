@@ -4,6 +4,7 @@
 создание, получение, удаление кодов.
 """
 
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
@@ -16,6 +17,11 @@ from app.schemas.activation_code import (
     GetActivationCodesResponseModel,
 )
 from app.schemas.enums.user_enums.users_status import UserRoleEnum
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
+
+
+logger = get_logger(LoggerName.ACTIVATION_CODE_LOGGER)
 
 
 class ActivationCodeService:
@@ -46,6 +52,11 @@ class ActivationCodeService:
         """
         code_data = {"role": role, "code": str(uuid4())}
 
+        logger.info("Generating code successfully", extra={
+            "role": role,
+            "generated_at": datetime.now(timezone.utc)
+        })
+
         return code_data
 
     async def create_code(
@@ -68,6 +79,13 @@ class ActivationCodeService:
         code_id = await self.code_dao.create_code(code_data)
         created_code = await self.code_dao.get_code(code_id)
         created_code["_id"] = str(created_code["_id"])  # type: ignore
+
+        logger.info("Creating code successfully", extra={
+            "role": role,
+            "code_id": str(code_id),
+            "generated_at": datetime.now(timezone.utc)
+        })
+
         return ActivationCodeModelResponse.model_validate(created_code)
 
     async def get_codes(
@@ -110,6 +128,9 @@ class ActivationCodeService:
         response = await self.code_dao.get_code(code_id=code_id)
 
         if not response:
+            logger.warning("Get code failed: Code not found", extra={
+                "code_id": code_id,
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Code not found")
 
         response["_id"] = str(response["_id"])
@@ -132,6 +153,13 @@ class ActivationCodeService:
         current_code = await self.code_dao.get_code(code_id)
 
         if not current_code:
+            logger.warning("Delete code failed: Code not found", extra={
+                "code_id": code_id,
+            })
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Code not found")
+
+        logger.info("Delete code successfully", extra={
+                "code_id": code_id,
+            })
 
         return await self.code_dao.delete_code(code_id)

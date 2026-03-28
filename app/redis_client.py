@@ -12,6 +12,10 @@ from typing import Optional
 
 from app.config import settings
 
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
+
+logger = get_logger(LoggerName.REDIS_LOGGER)
 
 class RedisClient:
     """
@@ -42,11 +46,24 @@ class RedisClient:
 
         try:
             await self.client.ping() # type: ignore
+            logger.debug("Redis Service connected", extra={
+                "url": settings.redis_config.url,
+                "database": settings.redis_config.db,
+            })
         except Exception as e:
+            logger.error("Reis Service connected error", extra={
+                "url": settings.redis_config.url,
+                "database": settings.redis_config.db,
+                "error": str(e),
+            })
             raise ConnectionError(f'Could not connect to Redis at {settings.redis_config.url}: {e}')
 
     async def close(self):
         """Закрыть подключение к Redis"""
+        logger.debug("Redis Service disconnect", extra={
+                "url": settings.redis_config.url,
+                "database": settings.redis_config.db,
+            })
 
         if self._pool:
             await self._pool.disconnect()

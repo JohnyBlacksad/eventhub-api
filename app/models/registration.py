@@ -11,6 +11,11 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ASCENDING
 
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
+
+
+logger = get_logger(LoggerName.REGISTRATION_DAO_LOGGER)
 
 class RegistrationDAO:
     """Data Access Object для коллекции регистраций.
@@ -50,10 +55,18 @@ class RegistrationDAO:
         Returns:
             Результат операции вставки.
         """
-        result = await self.collection.insert_one(
-            {"event_id": ObjectId(event_id), "user_id": ObjectId(user_id), "registered_at": datetime.now(timezone.utc)}
-        )
-        return result
+        try:
+            result = await self.collection.insert_one(
+                {"event_id": ObjectId(event_id), "user_id": ObjectId(user_id), "registered_at": datetime.now(timezone.utc)}
+            )
+            return result
+        except Exception as e:
+            logger.error("Add registration error", extra={
+                "event_id": event_id,
+                "user_id": user_id,
+                "error": str(e),
+            })
+            raise
 
     async def remove_registration(self, event_id: str, user_id: str):
         """Удалить регистрацию пользователя с события.
@@ -65,8 +78,16 @@ class RegistrationDAO:
         Returns:
             Результат операции удаления.
         """
-        result = await self.collection.delete_one({"event_id": ObjectId(event_id), "user_id": ObjectId(user_id)})
-        return result
+        try:
+            result = await self.collection.delete_one({"event_id": ObjectId(event_id), "user_id": ObjectId(user_id)})
+            return result
+        except Exception as e:
+            logger.error("Remove registration error", extra={
+                "event_id": event_id,
+                "user_id": user_id,
+                "error": str(e),
+            })
+            raise
 
     async def get_event_registrations(self, event_id: str, skip: int = 0, limit: int = 50) -> list[dict]:
         """Получить список регистраций на событие с пагинацией.
@@ -127,9 +148,16 @@ class RegistrationDAO:
         Returns:
             bool: True если регистрации удалены.
         """
-        payload = {"event_id": ObjectId(event_id)}
-        result = await self.collection.delete_many(payload)
-        return result.deleted_count > 0
+        try:
+            payload = {"event_id": ObjectId(event_id)}
+            result = await self.collection.delete_many(payload)
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error("Delete all registrations error", extra={
+                "event_id": event_id,
+                "error": str(e)
+            })
+            raise
 
     async def set_deletion_time_for_event(self, event_id: str, death_date: Optional[datetime]):
         """Установить время удаления для всех регистраций на событие.
@@ -141,13 +169,27 @@ class RegistrationDAO:
         Returns:
             Результат операции обновления.
         """
-        result = await self.collection.update_many(
-            {"event_id": ObjectId(event_id)}, {"$set": {"deleted_at": death_date}}
-        )
-        return result
+        try:
+            result = await self.collection.update_many(
+                {"event_id": ObjectId(event_id)}, {"$set": {"deleted_at": death_date}}
+            )
+            return result
+        except Exception as e:
+            logger.error('Set TTL registrations error', extra={
+                "event_id": event_id,
+                "error": str(e),
+            })
+            raise
 
     async def delete_registration_by_user(self, user_id: str) -> bool:
         """Удалить все регистрации пользователя"""
-        result = await self.collection.delete_many({"user_id": ObjectId(user_id)})
+        try:
+            result = await self.collection.delete_many({"user_id": ObjectId(user_id)})
 
-        return result.deleted_count > 0
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error("Failed to cleanup user registrations", extra={
+                "user_id": user_id,
+                "error": str(e)
+            })
+            raise

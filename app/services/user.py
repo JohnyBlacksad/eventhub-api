@@ -18,7 +18,10 @@ from app.schemas.enums.user_enums.users_status import UserRoleEnum
 from app.schemas.users import GetUsersResponseModel, UserRegisterModel, UserResponseModel, UserUpdateModel
 from app.services.auth import AuthService
 from app.services.cache import CacheService, cache_service
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
 
+logger = get_logger(LoggerName.USER_SERVICE_LOGGER)
 
 class UserService:
     """Сервис для бизнес-логики пользователей.
@@ -66,7 +69,11 @@ class UserService:
             HTTPException: 400 если email уже занят.
         """
         existing_user = await self.user_dao.get_user_by_email(user_data.email)
+
         if existing_user:
+            logger.warning("Registration failed: email already exists", extra={
+                "email": user_data.email
+            })
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="The users email address already exists."
             )
@@ -83,6 +90,11 @@ class UserService:
         new_user = await self.user_dao.get_user_by_id(user_id)
 
         await self.cache.delete_user_list()
+
+        logger.info("User registered successfully", extra={
+            "user_id": str(user_id),
+            "email": user_data.email,
+        })
 
         return UserResponseModel.model_validate(new_user, from_attributes=True)
 
@@ -109,6 +121,7 @@ class UserService:
         filters_hash = hashlib.md5(query_str.encode()).hexdigest()
 
         cached_users = await self.cache.get_user_list(filters_hash)
+
         if cached_users:
             return GetUsersResponseModel(
                 users=[UserResponseModel.model_validate(u) for u in cached_users]
@@ -136,17 +149,30 @@ class UserService:
             HTTPException: 404 если пользователь не найден.
             HTTPException: 400 если пароль неверный.
         """
+
         user = await self.user_dao.get_user_by_email(email)
+
         if not user:
+            logger.warning("Login failed: user not found", extra={"email": email})
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
 
         if user.get("is_banned"):
+            logger.warning("Login attempt by banned user", extra={
+                "email": email,
+                "user_id": str(user.get("_id")),
+            })
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is banned")
 
         is_valid = await self.auth_service.verify_password(password, user.get("hashed_password"))
 
         if not is_valid:
+            logger.warning("Login failed: invalid password", extra={"email": email})
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email or password is incorrect")
+
+        logger.info("User logged in successfully", extra={
+            "user_id": str(user.get("_id")),
+            "email": email,
+        })
 
         return user
 
@@ -170,6 +196,7 @@ class UserService:
         user = await self.user_dao.get_user_by_id(user_id)
 
         if not user:
+            logger.warning("Get user by ID: User ID is incorrect", extra={"user_id": str(user_id)})
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The id is incorrect")
 
         response_model = UserResponseModel.model_validate(user, from_attributes=True)
@@ -202,10 +229,13 @@ class UserService:
         updated_user = await self.user_dao.update_user(user_id, data_dict)
 
         if not updated_user:
+            logger.warning("Update user: User not found", extra={"user_id": str(user_id)})
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         await self.cache.delete_user(user_id)
         await self.cache.delete_user_list()
+
+        logger.info("Update user successfully", extra={"user_id": str(user_id),})
 
         return UserResponseModel.model_validate(updated_user, from_attributes=True)
 
@@ -220,16 +250,20 @@ class UserService:
         """
         user = await self.user_dao.get_user_by_id(user_id)
         if not user:
+            logger.warning("Delete user: User not found", extra={"user_id": str(user_id)})
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         if user.get("role") != "user":
             if await self.event_dao.has_active_events(user_id):
+                logger.warning("Delete user: Cannot delete organizer with published events", extra={"user_id": str(user_id)})
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete organizer with published events"
                 )
 
         await self.cache.delete_user(user_id)
         await self.cache.delete_user_list()
+
+        logger.info("Delete user successfully", extra={"user_id": str(user_id),})
 
         return await self.user_dao.delete_user(user_id)
 
@@ -253,11 +287,13 @@ class UserService:
         user = await self.user_dao.get_user_by_id(user_id)
 
         if not user:
+            logger.warning("Upgrade user role: User not found", extra={"user_id": str(user_id)})
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
 
         code_data = await self.code_dao.use_code(code_str, user_id)
 
         if not code_data:
+            logger.warning("Upgrade user role: Invalid or expired activation code", extra={"user_id": str(user_id)})
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or expired activation code")
 
         new_role = code_data.get("role", "ORGANIZER")
@@ -266,6 +302,8 @@ class UserService:
 
         await self.cache.delete_user(user_id)
         await self.cache.delete_user_list()
+
+        logger.info("Upgrade user role successfully", extra={"user_id": str(user_id)})
 
         return UserResponseModel.model_validate(updated_user, from_attributes=True)
 
@@ -282,7 +320,14 @@ class UserService:
         current_user = await self.user_dao.get_user_by_id(user_id)
 
         if not current_user:
+            logger.warning("Set ban status user: User not found.", extra={"user_id": str(user_id), "is_banned": is_banned})
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+        logger.info("User ban status changed", extra={
+            "user_id": user_id,
+            "is_banned": is_banned,
+            "action": "ban" if is_banned else "unban",
+        })
 
         updated_user = await self.user_dao.set_ban_user(user_id=user_id, is_banned=is_banned)
 
@@ -309,12 +354,15 @@ class UserService:
         user = await self.user_dao.get_user_by_id(user_id)
 
         if not user:
+            logger.warning("Delete user by admin: User not found.", extra={"user_id": str(user_id)})
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         result = await self.user_dao.delete_user(user_id)
 
         await self.cache.delete_user(user_id)
         await self.cache.delete_user_list()
+
+        logger.info("Delete user by admin: Delete user successfully", extra={"user_id": user_id})
 
         return result
 
@@ -332,11 +380,14 @@ class UserService:
         user = await self.user_dao.get_user_by_id(user_id)
 
         if not user:
+            logger.warning("Change user role by admin: User not found.", extra={"user_id": str(user_id)})
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         updated_user = await self.user_dao.update_user_role(user_id, new_role)
 
         await self.cache.delete_user(user_id)
         await self.cache.delete_user_list()
+
+        logger.info("Change user role by admin: Change user role successfully", extra={"user_id": user_id})
 
         return UserResponseModel.model_validate(updated_user, from_attributes=True)

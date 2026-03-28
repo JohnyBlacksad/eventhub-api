@@ -13,6 +13,10 @@ from app.schemas.enums.event_enums.event_enums import EventStatusEnum
 from app.tasks.broker import broker
 from app.tasks.settings import TaskQueueSettings
 
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
+
+logger = get_logger(LoggerName.QUEUE_TASK_CLEANUP_LOGGER)
 
 cleanup_task = broker.task(
     timeout=TaskQueueSettings.CLEANUP_TIMEOUT,
@@ -53,9 +57,17 @@ async def delete_event_task(event_id: str, user_id: str | None = None) -> dict:
     event = await event_dao.get_event(event_id)
 
     if not event:
+        logger.warning("Delete event task error: Event not found", extra={
+            "event_id": event_id,
+            "user_id": user_id,
+        })
         raise ValueError(f"Event not found: {event_id}")
 
     if user_id and str(event.get("created_by")) != user_id:
+        logger.warning("Delete event task error: Permission denied for user", extra={
+            "event_id": event_id,
+            "user_id": user_id,
+        })
         raise PermissionError(f"Permission denied for user: {user_id}")
 
     await registration_dao.delete_all_registrations_for_event(event_id)
@@ -64,6 +76,11 @@ async def delete_event_task(event_id: str, user_id: str | None = None) -> dict:
         "status": EventStatusEnum.CANCELLED.value,
         "deleted_at": datetime.now(timezone.utc)
     })
+
+    logger.debug("Delete event task successfully", extra={
+            "event_id": event_id,
+            "user_id": user_id,
+        })
 
     return {
         "status": "success",

@@ -10,7 +10,10 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ASCENDING, DESCENDING, TEXT, ReturnDocument
 
 from app.schemas.enums.event_enums.event_enums import EventStatusEnum
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
 
+logger = get_logger(LoggerName.EVENT_DAO_LOGGER)
 
 class EventDAO:
     """Data Access Object для коллекции событий.
@@ -88,8 +91,14 @@ class EventDAO:
         Returns:
             ID созданного события в виде строки.
         """
-        result = await self.collection.insert_one(event_data)
-        return str(result.inserted_id)
+        try:
+            result = await self.collection.insert_one(event_data)
+            return str(result.inserted_id)
+        except Exception as e:
+            logger.error("Create event error", extra={
+                "error": str(e)
+            })
+            raise
 
     async def get_event(self, event_id: str) -> dict | None:
         """Найти событие по MongoDB ObjectId.
@@ -100,9 +109,16 @@ class EventDAO:
         Returns:
             Документ события в виде словаря, или None если не найден.
         """
-        payload = {"_id": ObjectId(event_id)}
-        result = await self.collection.find_one(payload)
-        return result
+        try:
+            payload = {"_id": ObjectId(event_id)}
+            result = await self.collection.find_one(payload)
+            return result
+        except Exception as e:
+            logger.error("Get event error", extra={
+                "event_id": event_id,
+                "error": str(e),
+            })
+            raise
 
     async def get_events(
         self,
@@ -140,11 +156,18 @@ class EventDAO:
         Returns:
             Обновлённый документ события, или None если не найден.
         """
-        payload = {"_id": ObjectId(event_id)}
-        updated_event = await self.collection.find_one_and_update(
-            payload, {"$set": event_data}, return_document=ReturnDocument.AFTER
-        )
-        return updated_event
+        try:
+            payload = {"_id": ObjectId(event_id)}
+            updated_event = await self.collection.find_one_and_update(
+                payload, {"$set": event_data}, return_document=ReturnDocument.AFTER
+            )
+            return updated_event
+        except Exception as e:
+            logger.error("Update event error", extra={
+                "event_id": event_id,
+                "error": str(e),
+            })
+            raise
 
     async def delete_event(self, event_id: str):
         """Удалить событие по ID.
@@ -155,9 +178,16 @@ class EventDAO:
         Returns:
             True если событие удалено, False если не найдено.
         """
-        payload = {"_id": ObjectId(event_id)}
-        result = await self.collection.delete_one(payload)
-        return result.deleted_count > 0
+        try:
+            payload = {"_id": ObjectId(event_id)}
+            result = await self.collection.delete_one(payload)
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error("Delete event error", extra={
+                "event_id": event_id,
+                "error": str(e),
+            })
+            raise
 
     async def has_active_events(self, user_id: str) -> bool:
         """Проверить, есть ли у пользователя активные события.
@@ -177,5 +207,12 @@ class EventDAO:
 
     async def delete_events_by_user(self, user_id: str) -> bool:
         """Удалить все события пользователя"""
-        result = await self.collection.delete_many({"created_by": ObjectId(user_id)})
-        return result.deleted_count > 0
+        try:
+            result = await self.collection.delete_many({"created_by": ObjectId(user_id)})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error("Delete event by user error", extra={
+                "user_id": user_id,
+                "error": str(e),
+            })
+            raise

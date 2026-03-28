@@ -10,6 +10,10 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import settings
 
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
+
+logger = get_logger(LoggerName.DATA_BASE_LOGGER)
 
 class EventDataBase:
     """Класс для управления подключением к MongoDB.
@@ -38,6 +42,7 @@ class EventDataBase:
         """
         self.client = AsyncIOMotorClient(self._uri)
         self.db = self.client[self._db_name]
+        logger.info("Connecting to MongoDB", extra={"uri": self._uri})
         await self._ping()
 
     async def close(self):
@@ -61,7 +66,9 @@ class EventDataBase:
         """
         try:
             await self.client.admin.command("ping")
+            logger.debug("MongoDB ping successful")
         except Exception as e:
+            logger.error("MongoDB ping failed", extra={"error": str(e)}, exc_info=True)
             raise ConnectionError(f"Database is not connected: {e}")
 
 

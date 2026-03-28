@@ -13,6 +13,10 @@ from pymongo import ReturnDocument
 
 from app.schemas.activation_code import CodeFiltersResponse
 
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
+
+logger = get_logger(LoggerName.ACTIVATION_CODE_DAO_LOGGER)
 
 class ActivationCodeDAO:
     """Data Access Object для коллекции кодов активации.
@@ -75,12 +79,19 @@ class ActivationCodeDAO:
         Returns:
             Документ кода до обновления, или None если не найден.
         """
-        code = {"code": code_str, "is_used": False}
-        filter = {
-            "$set": {"is_used": True, "activated_at": datetime.now(timezone.utc), "activated_by": ObjectId(user_id)}
-        }
-        result = await self.collection.find_one_and_update(code, filter, return_document=ReturnDocument.BEFORE)
-        return result
+        try:
+            code = {"code": code_str, "is_used": False}
+            filter = {
+                "$set": {"is_used": True, "activated_at": datetime.now(timezone.utc), "activated_by": ObjectId(user_id)}
+            }
+            result = await self.collection.find_one_and_update(code, filter, return_document=ReturnDocument.BEFORE)
+            return result
+        except Exception as e:
+            logger.error("Use code error", extra={
+                "user_id": user_id,
+                "error": str(e)
+            })
+            raise
 
     async def create_code(self, code_data: dict) -> str:
         """Создать новый код активации.
@@ -91,9 +102,15 @@ class ActivationCodeDAO:
         Returns:
             ID созданного кода в виде строки.
         """
-        code_data.update({"is_used": False, "created_at": datetime.now(timezone.utc)})
-        result = await self.collection.insert_one(code_data)
-        return str(result.inserted_id)
+        try:
+            code_data.update({"is_used": False, "created_at": datetime.now(timezone.utc)})
+            result = await self.collection.insert_one(code_data)
+            return str(result.inserted_id)
+        except Exception as e:
+            logger.error("Create code error", extra={
+                "error": str(e),
+            })
+            raise
 
     async def delete_code(self, code_id: str) -> bool:
         """Удалить код активации по ID.
@@ -104,9 +121,16 @@ class ActivationCodeDAO:
         Returns:
             True если код удалён, False если не найден.
         """
-        payload = {"_id": ObjectId(code_id)}
-        result = await self.collection.delete_one(payload)
-        return result.deleted_count > 0
+        try:
+            payload = {"_id": ObjectId(code_id)}
+            result = await self.collection.delete_one(payload)
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error("Delete code error", extra={
+                "code_id": code_id,
+                "error": str(e),
+            })
+            raise
 
     async def get_code(self, code_id: str) -> dict | None:
         """Получить код активации по ID.
@@ -117,9 +141,16 @@ class ActivationCodeDAO:
         Returns:
             dict | None: Документ кода в виде словаря, или None если не найден.
         """
-        payload = {"_id": ObjectId(code_id)}
-        result = await self.collection.find_one(payload)
-        return result
+        try:
+            payload = {"_id": ObjectId(code_id)}
+            result = await self.collection.find_one(payload)
+            return result
+        except Exception as e:
+            logger.error("Get code error", extra={
+                "code_id": code_id,
+                "error": str(e),
+            })
+            raise
 
     async def get_codes(
         self, skip: int = 0, limit: int = 100, filters: Optional[CodeFiltersResponse] = None

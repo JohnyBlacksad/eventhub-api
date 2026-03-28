@@ -10,9 +10,10 @@ from typing import Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.utils.logger import setup_logger
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
 
-logger = setup_logger("eventhub.middleware")
+logger = get_logger(LoggerName.HTTP_MIDDLEWARE_LOGGER)
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):

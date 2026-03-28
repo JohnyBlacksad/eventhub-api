@@ -7,6 +7,11 @@ from typing import Optional
 from app.tasks.broker import broker
 from app.tasks.settings import TaskQueueSettings
 
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
+
+logger = get_logger(LoggerName.QUEUE_TASK_CACHE_LOGGER)
+
 notification_task = broker.task(
     #queue_name=TaskQueueSettings.QUEUE_NOTIFICATION,
     timeout=TaskQueueSettings.NOTIFICATION_TIMEOUT,
@@ -44,7 +49,11 @@ async def send_registration_notification_task(
         "event_id": event_id,
         "notification_sent": False # TODO: Заменить на True после реализации.
     }
-
+    logger.debug("Send registration notification task completed", extra={
+        "status": "success",
+        "user_id": user_id,
+        "event_id": event_id,
+    })
     return result
 
 
@@ -78,5 +87,10 @@ async def send_event_update_notification_task(
         "recipients_count": len(user_ids),
         "notifications_sent": 0, # TODO: заменить после реализации.
     }
+
+    logger.debug("Send event update notification task completed", extra={
+        "status": "success",
+        "event_id": event_id,
+    })
 
     return result

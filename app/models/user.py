@@ -7,6 +7,10 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ReturnDocument
 
+from app.utils.logger import get_logger
+from app.config_models.loggers_enum import LoggerName
+
+logger = get_logger(LoggerName.USER_DAO_LOGGER)
 
 class UserDAO:
     """Data Access Object для коллекции пользователей.
@@ -70,8 +74,15 @@ class UserDAO:
         Returns:
             ID созданного пользователя в виде строки.
         """
-        result = await self.collection.insert_one(user_data)
-        return str(result.inserted_id)
+        try:
+            result = await self.collection.insert_one(user_data)
+            return str(result.inserted_id)
+        except Exception as e:
+            logger.error("Failed to create user", extra={
+                "error": str(e),
+                "email": user_data.get("email", None)
+            })
+            raise
 
     async def get_users(self, skip: int = 0, limit: int = 0, filter_obj=None) -> list[dict]:
         """Получить список пользователей с пагинацией и фильтрами.
@@ -84,10 +95,16 @@ class UserDAO:
         Returns:
             list[dict]: Список документов пользователей.
         """
-        query = self.__build_filter(filter_obj)
-        cursor = self.collection.find(query).skip(skip).limit(limit)
+        try:
+            query = self.__build_filter(filter_obj)
+            cursor = self.collection.find(query).skip(skip).limit(limit)
 
-        return await cursor.to_list(length=limit)
+            return await cursor.to_list(length=limit)
+        except Exception as e:
+            logger.error("Failed to get users", extra={
+                "error": str(e),
+            })
+            raise
 
     async def get_user_by_id(self, user_id: str):
         """Найти пользователя по MongoDB ObjectId.
@@ -125,11 +142,18 @@ class UserDAO:
         Returns:
             Обновлённый документ пользователя, или None если не найден.
         """
-        query_filter = {"_id": ObjectId(user_id)}
-        updated_user = await self.collection.find_one_and_update(
-            query_filter, {"$set": update_data}, return_document=ReturnDocument.AFTER
-        )
-        return updated_user
+        try:
+            query_filter = {"_id": ObjectId(user_id)}
+            updated_user = await self.collection.find_one_and_update(
+                query_filter, {"$set": update_data}, return_document=ReturnDocument.AFTER
+            )
+            return updated_user
+        except Exception as e:
+            logger.error("Update user failed", extra={
+                "user_id": user_id,
+                "error": str(e),
+            })
+            raise
 
     async def delete_user(self, user_id: str):
         """Удалить пользователя по ID.
@@ -154,10 +178,18 @@ class UserDAO:
         Returns:
             Обновлённый документ пользователя.
         """
-        result = await self.collection.find_one_and_update(
-            {"_id": ObjectId(user_id)}, {"$set": {"role": new_role}}, return_document=ReturnDocument.AFTER
-        )
-        return result
+        try:
+            result = await self.collection.find_one_and_update(
+                {"_id": ObjectId(user_id)}, {"$set": {"role": new_role}}, return_document=ReturnDocument.AFTER
+            )
+            return result
+        except Exception as e:
+            logger.error("Update user role failed", extra={
+                "user_id": user_id,
+                "role": new_role,
+                "error": str(e)
+            })
+            raise
 
     async def set_ban_user(self, user_id: str, is_banned: bool):
         """Установить статус бана пользователя.
@@ -169,8 +201,16 @@ class UserDAO:
         Returns:
             Обновлённый документ пользователя.
         """
-        result = await self.collection.find_one_and_update(
-            {"_id": ObjectId(user_id)}, {"$set": {"is_banned": is_banned}}, return_document=ReturnDocument.AFTER
-        )
+        try:
+            result = await self.collection.find_one_and_update(
+                {"_id": ObjectId(user_id)}, {"$set": {"is_banned": is_banned}}, return_document=ReturnDocument.AFTER
+            )
 
-        return result
+            return result
+        except Exception as e:
+            logger.error("Ban user error", extra={
+                "user_id": user_id,
+                "is_banned": is_banned,
+                "error": str(e),
+            })
+            raise
