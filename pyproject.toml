@@ -23,6 +23,8 @@ redis = "^7.3.0"
 taskiq = "^0.12.1"
 taskiq-redis = "^1.2.2"
 gunicorn = "^25.3.0"
+prometheus-fastapi-instrumentator = "^7.1.0"
+prometheus-client = "^0.24.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

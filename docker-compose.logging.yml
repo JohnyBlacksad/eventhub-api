@@ -115,6 +115,69 @@ services:
       retries: 3
       start_period: 30s
 
+  cadvisor:
+      # Используем GCR — он стабильнее пуллится, чем GitHub Registry
+      image: gcr.io/cadvisor/cadvisor:v0.49.1
+      container_name: cadvisor
+      ports:
+        - "8082:8080"
+      volumes:
+        - /:/rootfs:ro
+        - /var/run:/var/run:rw # Важно для доступа к Docker Socket
+        - /sys:/sys:ro
+        - /var/lib/docker/:/var/lib/docker:ro
+        - /dev/disk/:/dev/disk:ro
+      networks:
+        - eventhub
+      restart: unless-stopped
+      # privileged нужен cAdvisor'у в WSL, чтобы читать системные счетчики
+      privileged: true
+      healthcheck:
+        # Проверяем через встроенный механизм, если curl вдруг не будет
+        test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/healthz || exit 1"]
+        interval: 15s
+        timeout: 10s
+        retries: 3
+        start_period: 10s
+
+  mongodb-exporter:
+      image: percona/mongodb_exporter:0.43.0
+      container_name: mongodb-exporter
+      ports:
+        - "9216:9216"
+      environment:
+        - MONGODB_URI=mongodb://mongodb:27017
+      networks:
+        - eventhub
+      restart: unless-stopped
+      depends_on:
+        mongodb:
+          condition: service_healthy
+      healthcheck:
+        test: ["CMD-SHELL", "wget -q --spider http://localhost:9216/metrics || exit 1"]
+        interval: 10s
+        timeout: 5s
+        retries: 3
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.63.0
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "9121:9121"
+    networks:
+      - eventhub
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9121/metrics || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
 
 volumes:
   loki-data:

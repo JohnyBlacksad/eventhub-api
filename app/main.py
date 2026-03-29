@@ -21,6 +21,9 @@ from app.models.events import EventDAO
 from app.models.registration import RegistrationDAO
 from app.models.user import UserDAO
 from app.migrations.runner import run_migrations
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from starlette.responses import Response
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,7 +44,6 @@ async def lifespan(app: FastAPI):
     await UserDAO.setup_indexes(get_user_collections())
     await RegistrationDAO.setup_indexes(get_registrations_collection())
     await ActivationCodeDAO.setup_indexes(get_activation_code_collection())
-
     await redis_client.connect()
 
     yield
@@ -56,6 +58,8 @@ app = FastAPI(
     docs_url="/api/v1/docs",
     redoc_url="/api/v1/redoc",
     openapi_url="/api/v1/openapi.json")  # redirect_slashes=True по умолчанию
+
+
 
 
 @app.get("/health", tags=["System"])
@@ -90,6 +94,35 @@ async def health_check():
     return {'status': 'ok', 'components': components}
 
 
+
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(RequestContextMiddleware)
 app.include_router(main_router, prefix="/api/v1")
+
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=False,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics", "/api/v1/docs", "/api/v1/redoc"],
+)
+
+
+instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+instrumentator.add(metrics.default())
+
+""" instrumentator.instrument(app)
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics():
+    # Мы берем данные именно из реестра инструментатора, а не из глобального!
+    return Response(
+        generate_latest(instrumentator.registry),
+        media_type=CONTENT_TYPE_LATEST
+    )
+ """
+# Metrics endpoint - добавляем напрямую после всех роутов
+
+""" @app.get("/metrics", include_in_schema=False)
+async def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+ """
